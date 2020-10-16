@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="description"
+      content="Szabo Gergely web-engineer. Functional enthusiast."
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <title>Szabo Gergely portfolio</title>
+  </head>
+
+  <body>
+    <div id="elm-root"></div>
+    <script src="/Main.min.js"></script>
+    <script>
+      var app = Elm.Main.init({
+        node: document.getElementById("elm-root"),
+        flags: {
+          windowSize: { width: window.innerWidth, height: window.innerHeight },
+        },
+      });
+    </script>
+  </body>
+</html>
