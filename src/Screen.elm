@@ -8,11 +8,20 @@ import Html exposing (Html)
 
 type alias Model =
     { outputBuffer : List String
-    , visibleOutput : List (List Char)
+    , visibleOutput : List Line
     , counter : Int
     , cursorVisible : Bool
     , cursorPosition : CursorPosition
     }
+
+
+type Line
+    = Line (List Char)
+
+
+lineMap : (List Char -> List Char) -> Line -> Line
+lineMap fn (Line line) =
+    Line (fn line)
 
 
 type alias CursorPosition =
@@ -22,9 +31,9 @@ type alias CursorPosition =
 init : List String -> Model
 init outputBuffer =
     { outputBuffer = outputBuffer
-    , visibleOutput = []
+    , visibleOutput = [ Line [] ]
     , counter = 0
-    , cursorVisible = False
+    , cursorVisible = True
     , cursorPosition = ( 0, 0 )
     }
 
@@ -58,44 +67,56 @@ printNext model =
             [] ->
                 model
 
-            firstRow :: rest ->
-                case String.uncons firstRow of
-                    Just ( char, rowRest ) ->
+            firstLn :: rest ->
+                let
+                    lnCount =
+                        List.length model.visibleOutput - 1
+
+                    colCount =
+                        case List.head model.visibleOutput of
+                            Just (Line cols) ->
+                                List.length cols
+
+                            Nothing ->
+                                0
+                in
+                case String.uncons firstLn of
+                    Just ( char, lnRest ) ->
                         { model
                             | visibleOutput = appendChar char model.visibleOutput
-                            , outputBuffer = rowRest :: rest
-                            , cursorPosition = (\( ln, col ) -> ( ln, col + 1 )) model.cursorPosition
+                            , outputBuffer = lnRest :: rest
+                            , cursorPosition = ( lnCount, colCount + 1 )
                         }
 
                     Nothing ->
                         { model
-                            | visibleOutput = [] :: model.visibleOutput
+                            | visibleOutput = Line [] :: model.visibleOutput
                             , outputBuffer = rest
-                            , cursorPosition = (\( ln, _ ) -> ( ln + 1, 0 )) model.cursorPosition
+                            , cursorPosition = ( lnCount + 1, 0 )
                         }
 
 
-appendChar : Char -> List (List Char) -> List (List Char)
+appendChar : Char -> List Line -> List Line
 appendChar char visibleOutput =
     let
         split lst =
-            Maybe.map2 Tuple.pair (List.tail lst) (List.head lst)
+            Maybe.map2 Tuple.pair (List.head lst) (List.tail lst)
     in
-    case split visibleOutput of
-        Nothing ->
-            [ [ char ] ]
+    case visibleOutput of
+        (Line lastLn) :: firstLns ->
+            Line (char :: lastLn)
+                :: firstLns
 
-        Just ( firstRows, lastRow ) ->
-            (char :: lastRow) :: firstRows
+        _ ->
+            [ Line [ char ] ]
 
 
 view : Model -> Html msg
 view model =
     let
-        rows =
+        lns =
             List.reverse model.visibleOutput
-                |> List.map ((::) ' ')
-                |> List.map List.reverse
+                |> List.map (lineMap ((::) ' ' >> List.reverse))
     in
     layout []
         (column
@@ -107,20 +128,20 @@ view model =
             , Font.family [ Font.monospace ]
             ]
             (List.indexedMap
-                (viewRow model)
-                rows
+                (viewLn model)
+                lns
             )
         )
 
 
-viewRow : Model -> Int -> List Char -> Element msg
-viewRow model ln chars =
+viewLn : Model -> Int -> Line -> Element msg
+viewLn model ln (Line cols) =
     paragraph []
-        (List.indexedMap (viewChar model ln) chars)
+        (List.indexedMap (viewCol model ln) cols)
 
 
-viewChar : Model -> Int -> Int -> Char -> Element msg
-viewChar { cursorPosition, cursorVisible } ln col char =
+viewCol : Model -> Int -> Int -> Char -> Element msg
+viewCol { cursorPosition, cursorVisible } ln col char =
     el
         ([ width (px 15)
          , height (px 20)
@@ -133,18 +154,3 @@ viewChar { cursorPosition, cursorVisible } ln col char =
                )
         )
         (text (String.fromChar char))
-
-
-viewCursor : Bool -> Element msg
-viewCursor cursorVisible =
-    el
-        (if cursorVisible then
-            [ Background.color (rgb 0 1 1)
-            , width (px 15)
-            , height (px 20)
-            ]
-
-         else
-            []
-        )
-        Element.none
