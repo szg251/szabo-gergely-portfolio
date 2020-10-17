@@ -5,11 +5,11 @@ import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
 import Device exposing (Device, WindowSize)
-import Element exposing (centerX, centerY, el)
+import Element exposing (centerX, centerY, el, rgb)
 import Http
 import Json.Decode exposing (decodeValue)
 import Route
-import Screen
+import Screen exposing (Block(..), Line(..))
 import Url
 
 
@@ -45,7 +45,21 @@ init flags url key =
       , page = Initializing
       , nextUrl = url
       , device = Device.fromWindowSize flags.windowSize
-      , screenModel = Screen.init [ "Hello", "World" ]
+      , screenModel =
+            Screen.init
+                [ Line [ Link ( "https://szabogergely.com", "Szabo Gergely" ) ]
+                , Line
+                    [ NormalBlock "Hello "
+                    , NormalBlock "World"
+                    , Colored ( rgb 0 0.7 0.7, "!" )
+                    , Colored ( rgb 0 0.6 0.6, "!" )
+                    , Colored ( rgb 0 0.5 0.5, "!" )
+                    , Colored ( rgb 0 0.4 0.4, "!" )
+                    , Colored ( rgb 0 0.3 0.3, "!" )
+                    ]
+                , Line [ Link ( "https://szabogergely.com", "Szabo Gergely" ) ]
+                , Line [ NormalBlock "Hello" ]
+                ]
       }
     , Cmd.none
     )
