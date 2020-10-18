@@ -232,7 +232,10 @@ view model =
             , Background.color (rgb 0 0 0)
             , Font.color (rgb 0.7 0.7 0.7)
             , paddingXY 20 20
-            , Font.family [ Font.monospace ]
+            , Font.family
+                [ Font.typeface "unscii-16"
+                , Font.monospace
+                ]
             ]
             (List.indexedMap
                 (viewLn model)
