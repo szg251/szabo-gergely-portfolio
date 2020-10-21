@@ -10,11 +10,15 @@ import List.Extra as ListE
 
 type alias Model =
     { outputBuffer : List (Line String)
-    , visibleOutput : List (Line (List Char))
+    , visibleOutput : VisibleOutput
     , counter : Int
     , cursorVisible : Bool
     , cursorPosition : CursorPosition
     }
+
+
+type alias VisibleOutput =
+    List (Line (List Char))
 
 
 type Line a
@@ -125,43 +129,41 @@ blinkCursor model =
 
 printNext : Model -> Model
 printNext model =
-    if modBy 8 model.counter /= 0 then
-        model
+    case model.outputBuffer of
+        [] ->
+            model
 
-    else
-        case model.outputBuffer of
-            [] ->
-                model
+        (Line firstLn) :: lastLns ->
+            case firstLn of
+                [] ->
+                    printNext
+                        { model
+                            | visibleOutput = Line [] :: model.visibleOutput
+                            , outputBuffer = lastLns
+                            , cursorPosition = ( Tuple.first model.cursorPosition + 1, 0 )
+                        }
 
-            (Line firstLn) :: lastLns ->
-                let
-                    ( lnCount, colCount ) =
-                        getLastPosition model.visibleOutput
-                in
-                case firstLn of
-                    [] ->
-                        printNext
+                firstBlock :: lastBlocks ->
+                    case unconsBlock firstBlock of
+                        Just ( firstChar, lastChars ) ->
                             { model
-                                | visibleOutput = Line [] :: model.visibleOutput
-                                , outputBuffer = lastLns
-                                , cursorPosition = ( lnCount + 1, 0 )
+                                | visibleOutput =
+                                    insertChar model.cursorPosition
+                                        firstChar
+                                        model.visibleOutput
+                                , outputBuffer = Line (lastChars :: lastBlocks) :: lastLns
+                                , cursorPosition =
+                                    ( Tuple.first model.cursorPosition
+                                    , Tuple.second model.cursorPosition + 1
+                                    )
                             }
 
-                    firstBlock :: lastBlocks ->
-                        case unconsBlock firstBlock of
-                            Just ( firstChar, lastChars ) ->
-                                { model
-                                    | visibleOutput = appendChar firstChar model.visibleOutput
-                                    , outputBuffer = Line (lastChars :: lastBlocks) :: lastLns
-                                    , cursorPosition = ( lnCount, colCount + 1 )
-                                }
-
-                            Nothing ->
-                                printNext
-                                    { model | outputBuffer = Line lastBlocks :: lastLns }
+                        Nothing ->
+                            printNext
+                                { model | outputBuffer = Line lastBlocks :: lastLns }
 
 
-getLastPosition : List (Line (List Char)) -> CursorPosition
+getLastPosition : VisibleOutput -> CursorPosition
 getLastPosition visibleOutput =
     ( List.length visibleOutput - 1
     , case List.head visibleOutput of
@@ -174,45 +176,68 @@ getLastPosition visibleOutput =
     )
 
 
-appendChar : Block Char -> List (Line (List Char)) -> List (Line (List Char))
-appendChar charBlock visibleOutput =
-    case visibleOutput of
+insertChar : CursorPosition -> Block Char -> VisibleOutput -> VisibleOutput
+insertChar cursorPosition charBlock visibleOutput =
+    let
+        reverseLnIndex =
+            List.length visibleOutput - Tuple.first cursorPosition - 1
+
+        ( bottomLns, upperLns ) =
+            ListE.splitAt reverseLnIndex visibleOutput
+                |> Tuple.mapSecond ((++) (List.repeat -reverseLnIndex (Line [])))
+    in
+    case upperLns of
         (Line lastLn) :: restLns ->
-            case lastLn of
-                lastBlock :: firstBlocks ->
-                    case ( lastBlock, charBlock ) of
-                        ( NormalBlock w1, NormalBlock char ) ->
-                            Line (NormalBlock (char :: w1) :: firstBlocks) :: restLns
+            let
+                reverseColIndex =
+                    List.map blockLength lastLn
+                        |> List.foldl (+) 0
+                        |> (\length -> length - Tuple.second cursorPosition)
 
-                        ( Colored ( color1, chars ), Colored ( color2, char ) ) ->
-                            if color1 == color2 then
-                                Line (Colored ( color1, char :: chars ) :: firstBlocks) :: restLns
+                ( rightCols, leftCols ) =
+                    ListE.splitAt reverseColIndex lastLn
+                        |> Tuple.mapSecond
+                            ((++)
+                                (if reverseColIndex < 0 then
+                                    [ NormalBlock (List.repeat -reverseColIndex ' ') ]
 
-                            else
-                                Line
-                                    (Colored ( color2, chars )
-                                        :: Colored ( color1, List.singleton char )
-                                        :: firstBlocks
-                                    )
-                                    :: restLns
+                                 else
+                                    []
+                                )
+                            )
 
-                        ( Link ( href1, chars ), Link ( href2, char ) ) ->
-                            if href1 == href2 then
-                                Line (Link ( href1, char :: chars ) :: firstBlocks) :: restLns
+                updatedLn =
+                    case leftCols of
+                        lastBlock :: firstBlocks ->
+                            case ( lastBlock, charBlock ) of
+                                ( NormalBlock w1, NormalBlock char ) ->
+                                    NormalBlock (char :: w1) :: firstBlocks
 
-                            else
-                                Line
-                                    (Link ( href2, chars )
-                                        :: Link ( href1, List.singleton char )
-                                        :: firstBlocks
-                                    )
-                                    :: restLns
+                                ( Colored ( color1, chars ), Colored ( color2, char ) ) ->
+                                    if color1 == color2 then
+                                        Colored ( color1, char :: chars ) :: firstBlocks
 
-                        ( block, char ) ->
-                            Line (mapBlock List.singleton char :: block :: firstBlocks) :: restLns
+                                    else
+                                        Colored ( color2, chars )
+                                            :: Colored ( color1, List.singleton char )
+                                            :: firstBlocks
 
-                [] ->
-                    Line [ mapBlock List.singleton charBlock ] :: restLns
+                                ( Link ( href1, chars ), Link ( href2, char ) ) ->
+                                    if href1 == href2 then
+                                        Link ( href1, char :: chars ) :: firstBlocks
+
+                                    else
+                                        Link ( href2, chars )
+                                            :: Link ( href1, List.singleton char )
+                                            :: firstBlocks
+
+                                ( block, char ) ->
+                                    mapBlock List.singleton char :: block :: firstBlocks
+
+                        [] ->
+                            [ mapBlock List.singleton charBlock ]
+            in
+            Line (rightCols ++ updatedLn) :: restLns ++ bottomLns
 
         _ ->
             [ Line [ mapBlock List.singleton charBlock ] ]
@@ -300,8 +325,8 @@ viewCol : Model -> Int -> Int -> Char -> ( Int, Element msg )
 viewCol { cursorPosition, cursorVisible } ln prevCol char =
     ( prevCol + 1
     , el
-        ([ width (px 15)
-         , height (px 20)
+        ([ width (px 10)
+         , height (px 18)
          ]
             ++ (if cursorPosition == ( ln, prevCol ) then
                     [ Background.color (rgb 0 1 1) ]

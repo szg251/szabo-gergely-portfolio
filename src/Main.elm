@@ -47,7 +47,9 @@ init flags url key =
       , device = Device.fromWindowSize flags.windowSize
       , screenModel =
             Screen.init
-                [ Line [ Link ( "https://szabogergely.com", "Szabo Gergely" ) ]
+                [ Line [ NormalBlock "╔═══════════════╗" ]
+                , Line [ NormalBlock "║ ", Link ( "https://szabogergely.com", "Szabo Gergely" ), NormalBlock " ║" ]
+                , Line [ NormalBlock "╚═══════════════╝" ]
                 , Line
                     [ NormalBlock "Hello "
                     , NormalBlock "World"
@@ -57,8 +59,6 @@ init flags url key =
                     , Colored ( rgb 0 0.4 0.4, "!" )
                     , Colored ( rgb 0 0.3 0.3, "!" )
                     ]
-                , Line [ Link ( "https://szabogergely.com", "Szabo Gergely" ) ]
-                , Line [ NormalBlock "Hello" ]
                 ]
       }
     , Cmd.none
