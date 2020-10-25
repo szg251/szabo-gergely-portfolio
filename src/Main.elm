@@ -8,6 +8,7 @@ import Device exposing (Device, WindowSize)
 import Element exposing (centerX, centerY, el, rgb)
 import Http
 import Json.Decode exposing (decodeValue)
+import ProfileImage
 import Route
 import Screen exposing (Block(..), Command(..))
 import Url
@@ -48,22 +49,12 @@ init flags url key =
       , screenModel =
             Screen.init
                 (Screen.batch
-                    [ Print (NormalBlock "╔═════")
-                    , Print (Colored ( rgb 0 0.7 0.7, "══════════╗" ))
-                    , EndOfLine
-                    , Print (NormalBlock "║ ")
-                    , Print (Link ( "https://szabogergely.com", "Szabo Gergely" ))
-                    , Print (NormalBlock " ║")
-                    , EndOfLine
-                    , Print (NormalBlock "╚═══════════════╝")
-                    , MoveCursor ( 0, 5 )
-                    , Print (NormalBlock "Hello ")
-                    , Print (NormalBlock "World")
-                    , Print (Colored ( rgb 0 0.7 0.7, "!" ))
-                    , Print (Colored ( rgb 0 0.6 0.6, "!" ))
-                    , Print (Colored ( rgb 0 0.5 0.5, "!" ))
-                    , Print (Colored ( rgb 0 0.4 0.4, "!" ))
-                    , Print (Colored ( rgb 0 0.3 0.3, "!" ))
+                    [ Screen.printLn "╔═══════════════╗"
+                    , Screen.print "║ "
+                    , Screen.printLink "https://szabogergely.com" "Szabo Gergely"
+                    , Screen.printLn " ║"
+                    , Screen.printLn "╚═══════════════╝"
+                    , ProfileImage.print ( 10, 0 )
                     ]
                 )
       }
