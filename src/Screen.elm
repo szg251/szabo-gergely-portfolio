@@ -3,18 +3,27 @@ module Screen exposing (..)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
+import Element.Input exposing (newPassword)
 import Html exposing (Html)
 import Html.Attributes exposing (style)
 import List.Extra as ListE
 
 
 type alias Model =
-    { outputBuffer : List (Line String)
-    , visibleOutput : VisibleOutput
+    { visibleOutput : VisibleOutput
+    , command : Command
     , counter : Int
     , cursorVisible : Bool
     , cursorPosition : CursorPosition
     }
+
+
+type Command
+    = NoCommand
+    | Print (Block String)
+    | MoveCursor CursorPosition
+    | EndOfLine
+    | Batch (List Command)
 
 
 type alias VisibleOutput =
@@ -29,7 +38,7 @@ type Block a
     = NormalBlock a
     | Colored ( Color, a )
     | Link ( String, a )
-    | EndOfLine
+    | EmptyBlock
 
 
 mapLine : (List (Block a) -> List (Block b)) -> Line a -> Line b
@@ -49,8 +58,76 @@ mapBlock fn block =
         Link ( x, y ) ->
             Link ( x, fn y )
 
-        EndOfLine ->
-            EndOfLine
+        EmptyBlock ->
+            EmptyBlock
+
+
+splitBlockAt : Int -> Block (List Char) -> ( Block (List Char), Block (List Char) )
+splitBlockAt index block =
+    case block of
+        NormalBlock xss ->
+            let
+                ( x, xs ) =
+                    ListE.splitAt index xss
+            in
+            ( NormalBlock x, NormalBlock xs )
+
+        Colored ( color, xss ) ->
+            let
+                ( x, xs ) =
+                    ListE.splitAt index xss
+            in
+            ( Colored ( color, x ), Colored ( color, xs ) )
+
+        Link ( href, xss ) ->
+            let
+                ( x, xs ) =
+                    ListE.splitAt index xss
+            in
+            ( Link ( href, x ), Link ( href, xs ) )
+
+        EmptyBlock ->
+            ( EmptyBlock, EmptyBlock )
+
+
+isEmptyBlock : Block (List Char) -> Bool
+isEmptyBlock block =
+    case block of
+        NormalBlock xss ->
+            List.isEmpty xss
+
+        Colored ( color, xss ) ->
+            List.isEmpty xss
+
+        Link ( href, xss ) ->
+            List.isEmpty xss
+
+        EmptyBlock ->
+            True
+
+
+mergeBlocks : Block (List Char) -> Block (List Char) -> List (Block (List Char))
+mergeBlocks blockA blockB =
+    case ( blockA, blockB ) of
+        ( NormalBlock a, NormalBlock b ) ->
+            [ NormalBlock (a ++ b) ]
+
+        ( Colored ( colorA, a ), Colored ( colorB, b ) ) ->
+            if colorA == colorB then
+                [ Colored ( colorA, a ++ b ) ]
+
+            else
+                [ blockA, blockB ]
+
+        ( Link ( hrefA, a ), Link ( hrefB, b ) ) ->
+            if hrefA == hrefB then
+                [ Link ( hrefA, a ++ b ) ]
+
+            else
+                [ blockA, blockB ]
+
+        ( a, b ) ->
+            [ blockA, blockB ]
 
 
 unconsBlock : Block String -> Maybe ( Block Char, Block String )
@@ -74,7 +151,7 @@ unconsBlock block =
         Link ( x, Nothing ) ->
             Nothing
 
-        EndOfLine ->
+        EmptyBlock ->
             Nothing
 
 
@@ -90,7 +167,7 @@ blockLength block =
         Link ( _, x ) ->
             List.length x
 
-        EndOfLine ->
+        EmptyBlock ->
             0
 
 
@@ -98,9 +175,9 @@ type alias CursorPosition =
     ( Int, Int )
 
 
-init : List (Line String) -> Model
-init outputBuffer =
-    { outputBuffer = outputBuffer
+init : Command -> Model
+init command =
+    { command = command
     , visibleOutput = [ Line [] ]
     , counter = 0
     , cursorVisible = True
@@ -110,7 +187,7 @@ init outputBuffer =
 
 tick : Model -> Model
 tick =
-    count >> blinkCursor >> printNext
+    count >> blinkCursor >> evalCommand
 
 
 count : Model -> Model
@@ -127,40 +204,64 @@ blinkCursor model =
         { model | cursorVisible = not model.cursorVisible }
 
 
-printNext : Model -> Model
-printNext model =
-    case model.outputBuffer of
-        [] ->
+evalCommand : Model -> Model
+evalCommand model =
+    case model.command of
+        NoCommand ->
             model
 
-        (Line firstLn) :: lastLns ->
-            case firstLn of
+        EndOfLine ->
+            evalCommand
+                { model
+                    | visibleOutput = Line [] :: model.visibleOutput
+                    , command = NoCommand
+                    , cursorPosition =
+                        ( Tuple.first model.cursorPosition + 1, 0 )
+                }
+
+        Print block ->
+            case unconsBlock block of
+                Just ( firstChar, lastChars ) ->
+                    { model
+                        | visibleOutput =
+                            insertChar model.cursorPosition
+                                firstChar
+                                model.visibleOutput
+                        , command = Print lastChars
+                        , cursorPosition =
+                            ( Tuple.first model.cursorPosition
+                            , Tuple.second model.cursorPosition + 1
+                            )
+                    }
+
+                Nothing ->
+                    { model | command = NoCommand }
+
+        MoveCursor newPosition ->
+            { model
+                | command = NoCommand
+                , cursorPosition = newPosition
+            }
+
+        Batch commands ->
+            case commands of
                 [] ->
-                    printNext
-                        { model
-                            | visibleOutput = Line [] :: model.visibleOutput
-                            , outputBuffer = lastLns
-                            , cursorPosition = ( Tuple.first model.cursorPosition + 1, 0 )
-                        }
+                    { model | command = NoCommand }
 
-                firstBlock :: lastBlocks ->
-                    case unconsBlock firstBlock of
-                        Just ( firstChar, lastChars ) ->
-                            { model
-                                | visibleOutput =
-                                    insertChar model.cursorPosition
-                                        firstChar
-                                        model.visibleOutput
-                                , outputBuffer = Line (lastChars :: lastBlocks) :: lastLns
-                                , cursorPosition =
-                                    ( Tuple.first model.cursorPosition
-                                    , Tuple.second model.cursorPosition + 1
-                                    )
-                            }
+                firstCommand :: restCommands ->
+                    let
+                        evaled =
+                            evalCommand
+                                { model | command = firstCommand }
+                    in
+                    { evaled
+                        | command =
+                            if evaled.command == NoCommand then
+                                Batch restCommands
 
-                        Nothing ->
-                            printNext
-                                { model | outputBuffer = Line lastBlocks :: lastLns }
+                            else
+                                Batch (evaled.command :: restCommands)
+                    }
 
 
 getLastPosition : VisibleOutput -> CursorPosition
@@ -189,55 +290,70 @@ insertChar cursorPosition charBlock visibleOutput =
     case upperLns of
         (Line lastLn) :: restLns ->
             let
+                ( length, blocks ) =
+                    ListE.mapAccuml
+                        (\colMin nextBlock ->
+                            let
+                                colMax =
+                                    colMin + blockLength nextBlock
+                            in
+                            ( colMax, ( colMin, colMax, nextBlock ) )
+                        )
+                        0
+                        lastLn
+
                 reverseColIndex =
-                    List.map blockLength lastLn
-                        |> List.foldl (+) 0
-                        |> (\length -> length - Tuple.second cursorPosition)
+                    length - Tuple.second cursorPosition
 
-                ( rightCols, leftCols ) =
-                    ListE.splitAt reverseColIndex lastLn
-                        |> Tuple.mapSecond
-                            ((++)
-                                (if reverseColIndex < 0 then
-                                    [ NormalBlock (List.repeat -reverseColIndex ' ') ]
-
-                                 else
-                                    []
-                                )
+                ( rightBlocksWithCol, leftBlocksWithCol ) =
+                    blocks
+                        |> ListE.splitWhen
+                            (\( colMin, colMax, _ ) ->
+                                colMin <= reverseColIndex && reverseColIndex <= colMax
+                            )
+                        |> Maybe.withDefault
+                            ( []
+                            , ( length
+                              , length + -reverseColIndex
+                              , NormalBlock (List.repeat -reverseColIndex ' ')
+                              )
+                                :: blocks
                             )
 
                 updatedLn =
-                    case leftCols of
-                        lastBlock :: firstBlocks ->
-                            case ( lastBlock, charBlock ) of
-                                ( NormalBlock w1, NormalBlock char ) ->
-                                    NormalBlock (char :: w1) :: firstBlocks
+                    let
+                        rightBlocks =
+                            List.map (\( _, _, block ) -> block) rightBlocksWithCol
 
-                                ( Colored ( color1, chars ), Colored ( color2, char ) ) ->
-                                    if color1 == color2 then
-                                        Colored ( color1, char :: chars ) :: firstBlocks
+                        updatedLeftBlocks =
+                            case leftBlocksWithCol of
+                                ( colMin, _, lastBlock ) :: firstBlocksTuples ->
+                                    let
+                                        ( charsRight, charsLeft ) =
+                                            splitBlockAt (reverseColIndex - colMin) lastBlock
+                                    in
+                                    charsRight
+                                        :: mapBlock List.singleton charBlock
+                                        :: charsLeft
+                                        :: List.map (\( _, _, block ) -> block) firstBlocksTuples
 
-                                    else
-                                        Colored ( color2, chars )
-                                            :: Colored ( color1, List.singleton char )
-                                            :: firstBlocks
+                                [] ->
+                                    [ mapBlock List.singleton charBlock ]
+                    in
+                    (rightBlocks ++ updatedLeftBlocks)
+                        |> List.filter (not << isEmptyBlock)
+                        |> List.foldr
+                            (\next prevBlocks ->
+                                case prevBlocks of
+                                    head :: tail ->
+                                        mergeBlocks next head ++ tail
 
-                                ( Link ( href1, chars ), Link ( href2, char ) ) ->
-                                    if href1 == href2 then
-                                        Link ( href1, char :: chars ) :: firstBlocks
-
-                                    else
-                                        Link ( href2, chars )
-                                            :: Link ( href1, List.singleton char )
-                                            :: firstBlocks
-
-                                ( block, char ) ->
-                                    mapBlock List.singleton char :: block :: firstBlocks
-
-                        [] ->
-                            [ mapBlock List.singleton charBlock ]
+                                    [] ->
+                                        next :: []
+                            )
+                            []
             in
-            Line (rightCols ++ updatedLn) :: restLns ++ bottomLns
+            bottomLns ++ Line updatedLn :: restLns
 
         _ ->
             [ Line [ mapBlock List.singleton charBlock ] ]
@@ -248,7 +364,7 @@ view model =
     let
         lns =
             List.reverse model.visibleOutput
-                |> List.map (mapLine ((::) EndOfLine >> List.map (mapBlock List.reverse) >> List.reverse))
+                |> List.map (mapLine ((::) EmptyBlock >> List.map (mapBlock List.reverse) >> List.reverse))
     in
     layout []
         (column
@@ -317,7 +433,7 @@ viewBlock model ln prevCol block =
                 }
             )
 
-        EndOfLine ->
+        EmptyBlock ->
             viewCol model ln prevCol ' '
 
 
@@ -328,7 +444,7 @@ viewCol { cursorPosition, cursorVisible } ln prevCol char =
         ([ width (px 10)
          , height (px 18)
          ]
-            ++ (if cursorPosition == ( ln, prevCol ) then
+            ++ (if cursorPosition == ( ln, prevCol ) && cursorVisible then
                     [ Background.color (rgb 0 1 1) ]
 
                 else
@@ -337,3 +453,48 @@ viewCol { cursorPosition, cursorVisible } ln prevCol char =
         )
         (text (String.fromChar char))
     )
+
+
+print : String -> Command
+print string =
+    Print (NormalBlock string)
+
+
+printColored : Color -> String -> Command
+printColored color string =
+    Print (Colored ( color, string ))
+
+
+printLink : String -> String -> Command
+printLink href string =
+    Print (Link ( href, string ))
+
+
+printLn : String -> Command
+printLn string =
+    Batch [ Print (NormalBlock string), EndOfLine ]
+
+
+printColoredLn : Color -> String -> Command
+printColoredLn color string =
+    Batch [ Print (Colored ( color, string )), EndOfLine ]
+
+
+printLinkLn : String -> String -> Command
+printLinkLn href string =
+    Batch [ Print (Link ( href, string )), EndOfLine ]
+
+
+moveCursor : CursorPosition -> Command
+moveCursor =
+    MoveCursor
+
+
+batch : List Command -> Command
+batch =
+    Batch
+
+
+none : Command
+none =
+    NoCommand

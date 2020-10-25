@@ -9,7 +9,7 @@ import Element exposing (centerX, centerY, el, rgb)
 import Http
 import Json.Decode exposing (decodeValue)
 import Route
-import Screen exposing (Block(..), Line(..))
+import Screen exposing (Block(..), Command(..))
 import Url
 
 
@@ -47,19 +47,25 @@ init flags url key =
       , device = Device.fromWindowSize flags.windowSize
       , screenModel =
             Screen.init
-                [ Line [ NormalBlock "╔═══════════════╗" ]
-                , Line [ NormalBlock "║ ", Link ( "https://szabogergely.com", "Szabo Gergely" ), NormalBlock " ║" ]
-                , Line [ NormalBlock "╚═══════════════╝" ]
-                , Line
-                    [ NormalBlock "Hello "
-                    , NormalBlock "World"
-                    , Colored ( rgb 0 0.7 0.7, "!" )
-                    , Colored ( rgb 0 0.6 0.6, "!" )
-                    , Colored ( rgb 0 0.5 0.5, "!" )
-                    , Colored ( rgb 0 0.4 0.4, "!" )
-                    , Colored ( rgb 0 0.3 0.3, "!" )
+                (Screen.batch
+                    [ Print (NormalBlock "╔═════")
+                    , Print (Colored ( rgb 0 0.7 0.7, "══════════╗" ))
+                    , EndOfLine
+                    , Print (NormalBlock "║ ")
+                    , Print (Link ( "https://szabogergely.com", "Szabo Gergely" ))
+                    , Print (NormalBlock " ║")
+                    , EndOfLine
+                    , Print (NormalBlock "╚═══════════════╝")
+                    , MoveCursor ( 0, 5 )
+                    , Print (NormalBlock "Hello ")
+                    , Print (NormalBlock "World")
+                    , Print (Colored ( rgb 0 0.7 0.7, "!" ))
+                    , Print (Colored ( rgb 0 0.6 0.6, "!" ))
+                    , Print (Colored ( rgb 0 0.5 0.5, "!" ))
+                    , Print (Colored ( rgb 0 0.4 0.4, "!" ))
+                    , Print (Colored ( rgb 0 0.3 0.3, "!" ))
                     ]
-                ]
+                )
       }
     , Cmd.none
     )
