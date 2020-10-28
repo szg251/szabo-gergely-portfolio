@@ -5,7 +5,7 @@ import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
 import Device exposing (Device, WindowSize)
-import Element exposing (centerX, centerY, el, rgb)
+import Html.Styled
 import Http
 import Json.Decode exposing (decodeValue)
 import ProfileImage
@@ -117,7 +117,9 @@ loadPage model =
 view : Model -> Browser.Document Msg
 view model =
     { title = "Szabo Gergely Portfolio"
-    , body = [ Screen.view model.screenModel ]
+    , body =
+        Screen.view model.screenModel
+            |> List.map Html.Styled.toUnstyled
     }
 
 

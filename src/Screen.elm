@@ -1,11 +1,10 @@
 module Screen exposing (..)
 
-import Element exposing (..)
-import Element.Background as Background
-import Element.Font as Font
-import Element.Input exposing (newPassword)
-import Html exposing (Html)
-import Html.Attributes exposing (style)
+import Css exposing (..)
+import Css.Global as Global exposing (body, global)
+import Html
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (css, href, style)
 import List.Extra as ListE
 
 
@@ -359,42 +358,36 @@ insertChar cursorPosition charBlock visibleOutput =
             [ Line [ mapBlock List.singleton charBlock ] ]
 
 
-view : Model -> Html msg
+view : Model -> List (Html msg)
 view model =
     let
         lns =
             List.reverse model.visibleOutput
                 |> List.map (mapLine ((::) EmptyBlock >> List.map (mapBlock List.reverse) >> List.reverse))
     in
-    layout []
-        (column
-            [ width fill
-            , height fill
-            , Background.color (rgb 0 0 0)
-            , Font.color (rgb 0.7 0.7 0.7)
-            , paddingXY 20 20
-            , Font.family
-                [ Font.typeface "unscii-16"
-                , Font.monospace
-                ]
+    global
+        [ body
+            [ backgroundColor (rgb 0 0 0)
+            , color (rgb 178 178 178)
+            , padding2 (px 20) (px 20)
+            , fontFamilies [ "unscii-16", "monospace" ]
             ]
-            (List.indexedMap
-                (viewLn model)
-                lns
-            )
-        )
+        ]
+        :: List.indexedMap
+            (viewLn model)
+            lns
 
 
-viewLn : Model -> Int -> Line (List Char) -> Element msg
+viewLn : Model -> Int -> Line (List Char) -> Html msg
 viewLn model ln (Line cols) =
     let
         ( _, elements ) =
             ListE.mapAccuml (viewBlock model ln) 0 cols
     in
-    paragraph [] elements
+    span [ css [ displayFlex ] ] elements
 
 
-viewBlock : Model -> Int -> Int -> Block (List Char) -> ( Int, Element msg )
+viewBlock : Model -> Int -> Int -> Block (List Char) -> ( Int, Html msg )
 viewBlock model ln prevCol block =
     case block of
         NormalBlock cols ->
@@ -403,55 +396,61 @@ viewBlock model ln prevCol block =
                     ListE.mapAccuml (viewCol model ln) prevCol cols
             in
             ( nextCols
-            , row [] elements
+            , span [] elements
             )
 
-        Colored ( color, cols ) ->
+        Colored ( blockColor, cols ) ->
             let
                 ( nextCols, elements ) =
                     ListE.mapAccuml (viewCol model ln) prevCol cols
             in
             ( nextCols
-            , row [ Font.color color ] elements
+            , span [ css [ color blockColor ] ] elements
             )
 
-        Link ( href, cols ) ->
+        Link ( blockUrl, cols ) ->
             let
                 ( nextCols, elements ) =
                     ListE.mapAccuml (viewCol model ln) prevCol cols
             in
             ( nextCols
-            , newTabLink
-                [ htmlAttribute (style "display" "inline-block")
-                , mouseOver
-                    [ Font.color (rgb 0 0 1)
-                    , Background.color (rgb 0 0.7 0.7)
+            , a
+                [ css
+                    [ display inlineBlock
+                    , color inherit
+                    , hover
+                        [ color (rgb 0 0 255)
+                        , backgroundColor (rgb 255 178 178)
+                        ]
                     ]
+                , href blockUrl
                 ]
-                { label = row [] elements
-                , url = href
-                }
+                elements
             )
 
         EmptyBlock ->
             viewCol model ln prevCol ' '
 
 
-viewCol : Model -> Int -> Int -> Char -> ( Int, Element msg )
+viewCol : Model -> Int -> Int -> Char -> ( Int, Html msg )
 viewCol { cursorPosition, cursorVisible } ln prevCol char =
     ( prevCol + 1
-    , el
-        ([ width (px 10)
-         , height (px 18)
-         ]
-            ++ (if cursorPosition == ( ln, prevCol ) && cursorVisible then
-                    [ Background.color (rgb 0 1 1) ]
+    , span
+        [ css
+            ([ display inlineBlock
+             , width (px 10)
+             , height (px 18)
+             , fontSize (px 20)
+             ]
+                ++ (if cursorPosition == ( ln, prevCol ) && cursorVisible then
+                        [ backgroundColor (rgb 0 1 1) ]
 
-                else
-                    []
-               )
-        )
-        (text (String.fromChar char))
+                    else
+                        []
+                   )
+            )
+        ]
+        [ text (String.fromChar char) ]
     )
 
 
