@@ -35,6 +35,7 @@ let
                 | uglifyjs --mangle --output $out/${module}.min.${extension}
           ''}
         '') targets)}
+        cp -r $PWD/${srcdir}/assets/* $out
       '';
     };
 in mkDerivation {
