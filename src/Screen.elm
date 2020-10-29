@@ -6,6 +6,7 @@ import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, href, style)
 import List.Extra as ListE
+import Svg.Attributes exposing (visibility)
 
 
 type alias Model =
@@ -20,17 +21,19 @@ type alias Model =
 type Command
     = NoCommand
     | Print (Block String)
+    | Delete
+    | ClearScreen
     | MoveCursor CursorPosition
     | EndOfLine
     | Batch (List Command)
 
 
 type alias VisibleOutput =
-    List (Line (List Char))
+    List Line
 
 
-type Line a
-    = Line (List (Block a))
+type Line
+    = Line (List (Block (List Char)))
 
 
 type Block a
@@ -40,7 +43,7 @@ type Block a
     | EmptyBlock
 
 
-mapLine : (List (Block a) -> List (Block b)) -> Line a -> Line b
+mapLine : (List (Block (List Char)) -> List (Block (List Char))) -> Line -> Line
 mapLine fn (Line line) =
     Line (fn line)
 
@@ -236,6 +239,23 @@ evalCommand model =
                 Nothing ->
                     { model | command = NoCommand }
 
+        Delete ->
+            { model
+                | visibleOutput = deleteChar model.cursorPosition model.visibleOutput
+                , command = NoCommand
+                , cursorPosition =
+                    ( Tuple.first model.cursorPosition
+                    , max 0 (Tuple.second model.cursorPosition - 1)
+                    )
+            }
+
+        ClearScreen ->
+            { model
+                | visibleOutput = []
+                , cursorPosition = ( 0, 0 )
+                , command = NoCommand
+            }
+
         MoveCursor newPosition ->
             { model
                 | command = NoCommand
@@ -253,14 +273,11 @@ evalCommand model =
                             evalCommand
                                 { model | command = firstCommand }
                     in
-                    { evaled
-                        | command =
-                            if evaled.command == NoCommand then
-                                Batch restCommands
+                    if evaled.command == NoCommand then
+                        evalCommand { evaled | command = Batch restCommands }
 
-                            else
-                                Batch (evaled.command :: restCommands)
-                    }
+                    else
+                        { evaled | command = Batch (evaled.command :: restCommands) }
 
 
 getLastPosition : VisibleOutput -> CursorPosition
@@ -276,8 +293,16 @@ getLastPosition visibleOutput =
     )
 
 
-insertChar : CursorPosition -> Block Char -> VisibleOutput -> VisibleOutput
-insertChar cursorPosition charBlock visibleOutput =
+splitVisibleOutputAt :
+    CursorPosition
+    -> VisibleOutput
+    ->
+        { upperLns : List Line
+        , currentLnRight : List (Block (List Char))
+        , currentLnLeft : List (Block (List Char))
+        , bottomLns : List Line
+        }
+splitVisibleOutputAt cursorPosition visibleOutput =
     let
         reverseLnIndex =
             List.length visibleOutput - Tuple.first cursorPosition - 1
@@ -287,7 +312,7 @@ insertChar cursorPosition charBlock visibleOutput =
                 |> Tuple.mapSecond ((++) (List.repeat -reverseLnIndex (Line [])))
     in
     case upperLns of
-        (Line lastLn) :: restLns ->
+        (Line lastLn) :: restUpperLns ->
             let
                 ( length, blocks ) =
                     ListE.mapAccuml
@@ -319,43 +344,90 @@ insertChar cursorPosition charBlock visibleOutput =
                                 :: blocks
                             )
 
-                updatedLn =
-                    let
-                        rightBlocks =
-                            List.map (\( _, _, block ) -> block) rightBlocksWithCol
+                rightBlocks =
+                    List.map (\( _, _, block ) -> block) rightBlocksWithCol
 
-                        updatedLeftBlocks =
-                            case leftBlocksWithCol of
-                                ( colMin, _, lastBlock ) :: firstBlocksTuples ->
-                                    let
-                                        ( charsRight, charsLeft ) =
-                                            splitBlockAt (reverseColIndex - colMin) lastBlock
-                                    in
-                                    charsRight
-                                        :: mapBlock List.singleton charBlock
-                                        :: charsLeft
-                                        :: List.map (\( _, _, block ) -> block) firstBlocksTuples
-
-                                [] ->
-                                    [ mapBlock List.singleton charBlock ]
-                    in
-                    (rightBlocks ++ updatedLeftBlocks)
-                        |> List.filter (not << isEmptyBlock)
-                        |> List.foldr
-                            (\next prevBlocks ->
-                                case prevBlocks of
-                                    head :: tail ->
-                                        mergeBlocks next head ++ tail
-
-                                    [] ->
-                                        next :: []
+                ( currentLnRight, currentLnLeft ) =
+                    case leftBlocksWithCol of
+                        ( colMin, _, lastBlock ) :: firstBlocksTuples ->
+                            let
+                                ( charsRight, charsLeft ) =
+                                    splitBlockAt (reverseColIndex - colMin) lastBlock
+                            in
+                            ( charsRight :: rightBlocks
+                            , charsLeft :: List.map (\( _, _, block ) -> block) firstBlocksTuples
                             )
-                            []
+
+                        [] ->
+                            ( rightBlocks
+                            , []
+                            )
             in
-            bottomLns ++ Line updatedLn :: restLns
+            { upperLns = restUpperLns
+            , currentLnLeft = currentLnLeft
+            , currentLnRight = currentLnRight
+            , bottomLns = bottomLns
+            }
 
         _ ->
-            [ Line [ mapBlock List.singleton charBlock ] ]
+            { upperLns = []
+            , currentLnLeft = []
+            , currentLnRight = []
+            , bottomLns = bottomLns
+            }
+
+
+mergeVisibleOutput :
+    { upperLns : List Line
+    , currentLnRight : List (Block (List Char))
+    , currentLnLeft : List (Block (List Char))
+    , bottomLns : List Line
+    }
+    -> VisibleOutput
+mergeVisibleOutput { upperLns, currentLnLeft, currentLnRight, bottomLns } =
+    let
+        updatedLn =
+            (currentLnRight ++ currentLnLeft)
+                |> List.filter (not << isEmptyBlock)
+                |> List.foldr
+                    (\next prevBlocks ->
+                        case prevBlocks of
+                            head :: tail ->
+                                mergeBlocks next head ++ tail
+
+                            [] ->
+                                next :: []
+                    )
+                    []
+    in
+    bottomLns ++ Line updatedLn :: upperLns
+
+
+deleteChar : CursorPosition -> VisibleOutput -> VisibleOutput
+deleteChar cursorPosition visibleOutput =
+    splitVisibleOutputAt cursorPosition visibleOutput
+        |> (\splitted ->
+                case splitted.currentLnLeft of
+                    [] ->
+                        splitted
+
+                    block :: restBlocks ->
+                        let
+                            ( _, remainder ) =
+                                splitBlockAt 1 block
+                        in
+                        { splitted | currentLnLeft = remainder :: restBlocks }
+           )
+        |> mergeVisibleOutput
+
+
+insertChar : CursorPosition -> Block Char -> VisibleOutput -> VisibleOutput
+insertChar cursorPosition charBlock visibleOutput =
+    splitVisibleOutputAt cursorPosition visibleOutput
+        |> (\splitted ->
+                { splitted | currentLnLeft = mapBlock List.singleton charBlock :: splitted.currentLnLeft }
+           )
+        |> mergeVisibleOutput
 
 
 view : Model -> List (Html msg)
@@ -378,7 +450,7 @@ view model =
             lns
 
 
-viewLn : Model -> Int -> Line (List Char) -> Html msg
+viewLn : Model -> Int -> Line -> Html msg
 viewLn model ln (Line cols) =
     let
         ( _, elements ) =
@@ -482,6 +554,16 @@ printColoredLn color string =
 printLinkLn : String -> String -> Command
 printLinkLn href string =
     Batch [ Print (Link ( href, string )), EndOfLine ]
+
+
+clearScreen : Command
+clearScreen =
+    ClearScreen
+
+
+delete : Command
+delete =
+    Delete
 
 
 moveCursor : CursorPosition -> Command
