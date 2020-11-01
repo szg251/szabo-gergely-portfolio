@@ -30,6 +30,11 @@
           windowSize: { width: window.innerWidth, height: window.innerHeight },
         },
       });
+
+      // app.ports.send()
+      document.addEventListener("keydown", (e) => {
+        e.preventDefault();
+      });
     </script>
   </body>
 </html>

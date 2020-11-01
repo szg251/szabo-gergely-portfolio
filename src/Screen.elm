@@ -11,21 +11,21 @@ import Svg.Attributes exposing (visibility)
 
 type alias Model =
     { visibleOutput : VisibleOutput
-    , command : Command
+    , command : ScreenCommand
     , counter : Int
     , cursorVisible : Bool
     , cursorPosition : CursorPosition
     }
 
 
-type Command
+type ScreenCommand
     = NoCommand
     | Print (Block String)
     | Delete
     | ClearScreen
-    | MoveCursor CursorPosition
-    | EndOfLine
-    | Batch (List Command)
+    | MoveCursor (CursorPosition -> CursorPosition)
+    | LineBreak
+    | Batch (List ScreenCommand)
 
 
 type alias VisibleOutput =
@@ -177,7 +177,7 @@ type alias CursorPosition =
     ( Int, Int )
 
 
-init : Command -> Model
+init : ScreenCommand -> Model
 init command =
     { command = command
     , visibleOutput = [ Line [] ]
@@ -206,13 +206,26 @@ blinkCursor model =
         { model | cursorVisible = not model.cursorVisible }
 
 
+appendCommand : ScreenCommand -> Model -> Model
+appendCommand command model =
+    case model.command of
+        NoCommand ->
+            { model | command = command }
+
+        Batch commands ->
+            { model | command = Batch (commands ++ [ command ]) }
+
+        prevCommand ->
+            { model | command = Batch (prevCommand :: [ command ]) }
+
+
 evalCommand : Model -> Model
 evalCommand model =
     case model.command of
         NoCommand ->
             model
 
-        EndOfLine ->
+        LineBreak ->
             evalCommand
                 { model
                     | visibleOutput = Line [] :: model.visibleOutput
@@ -256,10 +269,10 @@ evalCommand model =
                 , command = NoCommand
             }
 
-        MoveCursor newPosition ->
+        MoveCursor updatedPosition ->
             { model
                 | command = NoCommand
-                , cursorPosition = newPosition
+                , cursorPosition = updatedPosition model.cursorPosition
             }
 
         Batch commands ->
@@ -515,7 +528,7 @@ viewCol { cursorPosition, cursorVisible } ln prevCol char =
              , fontSize (px 20)
              ]
                 ++ (if cursorPosition == ( ln, prevCol ) && cursorVisible then
-                        [ backgroundColor (rgb 0 1 1) ]
+                        [ backgroundColor (rgb 0 255 255) ]
 
                     else
                         []
@@ -526,56 +539,61 @@ viewCol { cursorPosition, cursorVisible } ln prevCol char =
     )
 
 
-print : String -> Command
+print : String -> ScreenCommand
 print string =
     Print (NormalBlock string)
 
 
-printColored : Color -> String -> Command
+printColored : Color -> String -> ScreenCommand
 printColored color string =
     Print (Colored ( color, string ))
 
 
-printLink : String -> String -> Command
+printLink : String -> String -> ScreenCommand
 printLink href string =
     Print (Link ( href, string ))
 
 
-printLn : String -> Command
+printLn : String -> ScreenCommand
 printLn string =
-    Batch [ Print (NormalBlock string), EndOfLine ]
+    Batch [ Print (NormalBlock string), LineBreak ]
 
 
-printColoredLn : Color -> String -> Command
+printColoredLn : Color -> String -> ScreenCommand
 printColoredLn color string =
-    Batch [ Print (Colored ( color, string )), EndOfLine ]
+    Batch [ Print (Colored ( color, string )), LineBreak ]
 
 
-printLinkLn : String -> String -> Command
+printLinkLn : String -> String -> ScreenCommand
 printLinkLn href string =
-    Batch [ Print (Link ( href, string )), EndOfLine ]
+    Batch [ Print (Link ( href, string )), LineBreak ]
 
 
-clearScreen : Command
+lineBreak : ScreenCommand
+lineBreak =
+    LineBreak
+
+
+clearScreen : ScreenCommand
 clearScreen =
     ClearScreen
 
 
-delete : Command
+delete : ScreenCommand
 delete =
     Delete
 
 
-moveCursor : CursorPosition -> Command
+moveCursor : (CursorPosition -> CursorPosition) -> ScreenCommand
 moveCursor =
     MoveCursor
 
 
-batch : List Command -> Command
+batch : List ScreenCommand -> ScreenCommand
 batch =
     Batch
 
 
-none : Command
-none =
+noCommand : ScreenCommand
+noCommand =
     NoCommand

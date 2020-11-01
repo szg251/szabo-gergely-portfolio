@@ -1,8 +1,6 @@
 module ScreenTest exposing (..)
 
 import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
-import Random
 import Screen exposing (Block(..), Line(..), VisibleOutput, batch, clearScreen, delete, moveCursor, print, printLink, printLn)
 import Test exposing (..)
 
@@ -54,7 +52,7 @@ suite =
                         Screen.init
                             (batch
                                 [ print "4567"
-                                , moveCursor ( 0, 0 )
+                                , moveCursor (always ( 0, 0 ))
                                 , printLink "https://example.com" "0123"
                                 ]
                             )
@@ -76,7 +74,7 @@ suite =
                         Screen.init
                             (batch
                                 [ print "4567"
-                                , moveCursor ( 0, 0 )
+                                , moveCursor (always ( 0, 0 ))
                                 , print "0123"
                                 ]
                             )
@@ -94,7 +92,7 @@ suite =
                         Screen.init
                             (batch
                                 [ print "4567"
-                                , moveCursor ( 0, 2 )
+                                , moveCursor (always ( 0, 2 ))
                                 , printLink "https://example.com" "0123"
                                 ]
                             )
@@ -117,7 +115,7 @@ suite =
                         Screen.init
                             (batch
                                 [ print "4567"
-                                , moveCursor ( 0, 6 )
+                                , moveCursor (always ( 0, 6 ))
                                 , print "0123"
                                 ]
                             )
@@ -136,7 +134,7 @@ suite =
                         Screen.init
                             (batch
                                 [ print "4567"
-                                , moveCursor ( 2, 2 )
+                                , moveCursor (always ( 2, 2 ))
                                 , print "0123"
                                 ]
                             )
@@ -168,7 +166,7 @@ suite =
                         Screen.init
                             (batch
                                 [ print "01234"
-                                , moveCursor ( 0, 2 )
+                                , moveCursor (always ( 0, 2 ))
                                 , delete
                                 ]
                             )

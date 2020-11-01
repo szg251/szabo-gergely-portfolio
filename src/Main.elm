@@ -4,13 +4,15 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
+import Command
 import Device exposing (Device, WindowSize)
 import Html.Styled
 import Http
-import Json.Decode exposing (decodeValue)
+import Json.Decode as Decode exposing (decodeValue)
 import ProfileImage
 import Route
-import Screen exposing (Block(..), Command(..))
+import Screen exposing (Block(..), ScreenCommand(..))
+import Terminal
 import Url
 
 
@@ -37,26 +39,24 @@ type alias Model =
     , nextUrl : Url.Url
     , device : Device
     , screenModel : Screen.Model
+    , terminalModel : Terminal.Model
     }
 
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
+    let
+        ( terminalModel, screenCmd ) =
+            Terminal.init
+                [ ( "echo", Command.echo ) ]
+                (Just "echo \"Hello World\"")
+    in
     ( { key = key
       , page = Initializing
       , nextUrl = url
       , device = Device.fromWindowSize flags.windowSize
-      , screenModel =
-            Screen.init
-                (Screen.batch
-                    [ Screen.printLn "╔═══════════════╗"
-                    , Screen.print "║ "
-                    , Screen.printLink "https://szabogergely.com" "Szabo Gergely"
-                    , Screen.printLn " ║"
-                    , Screen.printLn "╚═══════════════╝"
-                    , ProfileImage.print ( 10, 0 )
-                    ]
-                )
+      , screenModel = Screen.init screenCmd
+      , terminalModel = terminalModel
       }
     , Cmd.none
     )
@@ -68,6 +68,7 @@ type Msg
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
     | Tick
+    | KeyPressed Terminal.Key
 
 
 type Page
@@ -99,6 +100,18 @@ update msg model =
         Tick ->
             ( { model | screenModel = Screen.tick model.screenModel }, Cmd.none )
 
+        KeyPressed key ->
+            let
+                ( updatedTerminalModel, screenCmd ) =
+                    Terminal.keyDown model.terminalModel key
+            in
+            ( { model
+                | terminalModel = updatedTerminalModel
+                , screenModel = Screen.appendCommand screenCmd model.screenModel
+              }
+            , Cmd.none
+            )
+
 
 loadPage : Model -> ( Model, Cmd Msg )
 loadPage model =
@@ -128,4 +141,6 @@ subscriptions model =
     Sub.batch
         [ Browser.Events.onResize (\w h -> GotWindowSize { width = w, height = h })
         , Browser.Events.onAnimationFrame (always Tick)
+        , Browser.Events.onKeyDown (Decode.map KeyPressed Terminal.keyDecoder)
+        , Browser.Events.onKeyPress (Decode.map KeyPressed Terminal.keyDecoder)
         ]

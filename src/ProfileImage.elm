@@ -1,10 +1,10 @@
 module ProfileImage exposing (..)
 
-import Screen exposing (Command, CursorPosition, batch, moveCursor)
+import Screen exposing (CursorPosition, ScreenCommand, batch, moveCursor)
 
 
-printImage : CursorPosition -> String -> Command
-printImage ( ln, col ) string =
+printImage : String -> ScreenCommand
+printImage string =
     let
         printLine lineCount line =
             line
@@ -19,7 +19,7 @@ printImage ( ln, col ) string =
                     ( 0, "" )
                 |> (\( spaces, word ) ->
                         batch
-                            [ moveCursor ( ln + lineCount, col + spaces )
+                            [ moveCursor (\( ln, col ) -> ( ln + lineCount, col + spaces ))
                             , Screen.print word
                             ]
                    )
@@ -29,9 +29,9 @@ printImage ( ln, col ) string =
         |> batch
 
 
-print : CursorPosition -> Command
-print cursorPosition =
-    printImage cursorPosition """
+print : ScreenCommand
+print =
+    printImage """
                                   %(##%//*////,.
                            ,%,//(%##%%%%((*%(((*#&(%%/(%@@@.
                            /%(*.(@&%@@&&#@@%@##@#& %#%@&/&@(.
