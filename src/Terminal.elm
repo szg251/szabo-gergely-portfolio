@@ -1,10 +1,12 @@
 module Terminal exposing (..)
 
+import Browser.Navigation as Nav
 import Command exposing (Command)
 import Css exposing (rgb)
 import Dict exposing (Dict)
 import Json.Decode as Decode
 import List.Extra as ListE
+import Maybe.Extra as MaybeE
 import Parser
     exposing
         ( (|.)
@@ -23,6 +25,10 @@ import Parser
         , symbol
         )
 import Screen exposing (Block(..), CursorPosition, ScreenCommand(..))
+import Url
+import Url.Builder
+import Url.Parser exposing ((<?>))
+import Url.Parser.Query
 
 
 type Key
@@ -42,11 +48,17 @@ type alias Model =
     , history : List String
     , commandDict : Dict String Command
     , promptCursor : Int
+    , navKey : Nav.Key
     }
 
 
-init : List ( String, Command ) -> Maybe String -> ( Model, ScreenCommand )
-init commands maybeCommand =
+init :
+    { commands : List ( String, Command )
+    , initCommand : Maybe ( String, List String )
+    , navKey : Nav.Key
+    }
+    -> ( Model, ScreenCommand )
+init { commands, initCommand, navKey } =
     let
         commandDict =
             Dict.fromList commands
@@ -57,10 +69,11 @@ init commands maybeCommand =
             , history = []
             , commandDict = commandDict
             , promptCursor = 0
+            , navKey = navKey
             }
     in
     ( model
-    , case maybeCommand of
+    , case initCommand of
         Nothing ->
             printPrompt model
 
@@ -126,16 +139,23 @@ argHelp revArgs =
         ]
 
 
-evalCommand : Dict String Command -> String -> ScreenCommand
-evalCommand commandDict input =
-    case parseCommand input of
-        Err _ ->
-            Screen.printLn (input ++ " not found")
 
-        Ok ( commandName, args ) ->
-            Dict.get commandName commandDict
-                |> Maybe.map (\command -> command Nothing args |> Screen.printLn)
-                |> Maybe.withDefault (Screen.printLn ("command not found: " ++ commandName))
+-- evalCommand : Dict String Command -> String -> ScreenCommand
+-- evalCommand commandDict input =
+--     case parseCommand input of
+--         Err _ ->
+--             Screen.printLn (input ++ " not found")
+--         Ok ( commandName, args ) ->
+--             Dict.get commandName commandDict
+--                 |> Maybe.map (\command -> command Nothing args |> Screen.printLn)
+--                 |> Maybe.withDefault (Screen.printLn ("command not found: " ++ commandName))
+
+
+evalCommand : Dict String Command -> ( String, List String ) -> ScreenCommand
+evalCommand commandDict ( commandName, args ) =
+    Dict.get commandName commandDict
+        |> Maybe.map (\command -> command Nothing args |> Screen.printLn)
+        |> Maybe.withDefault (Screen.printLn ("command not found: " ++ commandName))
 
 
 keyDecoder : Decode.Decoder Key
@@ -173,7 +193,7 @@ toKey string =
                     Invalid
 
 
-keyDown : Model -> Key -> ( Model, ScreenCommand )
+keyDown : Model -> Key -> ( Model, ScreenCommand, Cmd msg )
 keyDown model key =
     case key of
         Character char ->
@@ -182,31 +202,34 @@ keyDown model key =
                 , promptCursor = model.promptCursor + 1
               }
             , Screen.print (String.fromChar char)
+            , Cmd.none
             )
 
         ArrowLeft ->
             if model.promptCursor > 0 then
                 ( { model | promptCursor = model.promptCursor - 1 }
                 , Screen.moveCursor (\( ln, col ) -> ( ln, col - 1 ))
+                , Cmd.none
                 )
 
             else
-                ( model, Screen.noCommand )
+                ( model, Screen.noCommand, Cmd.none )
 
         ArrowRight ->
             if model.promptCursor < List.length model.inputBuffer then
                 ( { model | promptCursor = model.promptCursor + 1 }
                 , Screen.moveCursor (\( ln, col ) -> ( ln, col + 1 ))
+                , Cmd.none
                 )
 
             else
-                ( model, Screen.noCommand )
+                ( model, Screen.noCommand, Cmd.none )
 
         ArrowUp ->
-            ( model, Screen.noCommand )
+            ( model, Screen.noCommand, Cmd.none )
 
         ArrowDown ->
-            ( model, Screen.noCommand )
+            ( model, Screen.noCommand, Cmd.none )
 
         Backspace ->
             if model.promptCursor > 0 then
@@ -219,22 +242,73 @@ keyDown model key =
                     , inputBuffer = ListE.removeAt revIndex model.inputBuffer
                   }
                 , Screen.delete
+                , Cmd.none
                 )
 
             else
-                ( model, Screen.noCommand )
+                ( model, Screen.noCommand, Cmd.none )
 
         Enter ->
+            let
+                command =
+                    List.foldl String.cons "" model.inputBuffer
+
+                parsedCommand =
+                    parseCommand command
+            in
             ( { model
                 | inputBuffer = []
                 , promptCursor = 0
               }
             , Screen.batch
                 [ Screen.lineBreak
-                , evalCommand model.commandDict (List.foldl String.cons "" model.inputBuffer)
+                , parsedCommand
+                    |> Result.map (evalCommand model.commandDict)
+                    |> Result.withDefault (Screen.printLn (command ++ " not found"))
                 , printPrompt model
                 ]
+            , parsedCommand
+                |> Result.map (pushCommandUrl model.navKey)
+                |> Result.withDefault Cmd.none
             )
 
         Invalid ->
-            ( model, Screen.noCommand )
+            ( model, Screen.noCommand, Cmd.none )
+
+
+pushCommandUrl : Nav.Key -> ( String, List String ) -> Cmd msg
+pushCommandUrl navKey ( commandName, args ) =
+    Nav.pushUrl navKey
+        (Url.Builder.absolute [ commandName ]
+            (List.indexedMap
+                (\index arg ->
+                    Url.Builder.string (String.fromInt index) arg
+                )
+                args
+            )
+        )
+
+
+parseCommandUrl : Url.Url -> Maybe ( String, List String )
+parseCommandUrl url =
+    let
+        toTuple commandName arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 =
+            ( commandName
+            , [ arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 ] |> MaybeE.values
+            )
+
+        urlParser =
+            Url.Parser.string
+                <?> Url.Parser.Query.string "0"
+                <?> Url.Parser.Query.string "1"
+                <?> Url.Parser.Query.string "2"
+                <?> Url.Parser.Query.string "3"
+                <?> Url.Parser.Query.string "4"
+                <?> Url.Parser.Query.string "5"
+                <?> Url.Parser.Query.string "6"
+                <?> Url.Parser.Query.string "7"
+                <?> Url.Parser.Query.string "8"
+                <?> Url.Parser.Query.string "9"
+                |> Url.Parser.map toTuple
+    in
+    Url.Parser.parse urlParser url

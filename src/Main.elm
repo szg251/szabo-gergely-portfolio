@@ -46,10 +46,16 @@ type alias Model =
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     let
+        initCommand =
+            Terminal.parseCommandUrl url
+                |> Maybe.withDefault ( "echo", [ "Hello World" ] )
+
         ( terminalModel, screenCmd ) =
             Terminal.init
-                [ ( "echo", Command.echo ) ]
-                (Just "echo \"Hello World\"")
+                { commands = [ ( "echo", Command.echo ) ]
+                , initCommand = Just initCommand
+                , navKey = key
+                }
     in
     ( { key = key
       , page = Initializing
@@ -102,14 +108,14 @@ update msg model =
 
         KeyPressed key ->
             let
-                ( updatedTerminalModel, screenCmd ) =
+                ( updatedTerminalModel, screenCmd, cmd ) =
                     Terminal.keyDown model.terminalModel key
             in
             ( { model
                 | terminalModel = updatedTerminalModel
                 , screenModel = Screen.appendCommand screenCmd model.screenModel
               }
-            , Cmd.none
+            , cmd
             )
 
 
