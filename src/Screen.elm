@@ -23,6 +23,7 @@ type ScreenCommand
     | Print (Block String)
     | Delete
     | ClearScreen
+    | ClearLn
     | MoveCursor (CursorPosition -> CursorPosition)
     | LineBreak
     | Batch (List ScreenCommand)
@@ -269,6 +270,13 @@ evalCommand model =
                 , command = NoCommand
             }
 
+        ClearLn ->
+            { model
+                | visibleOutput = clearLine model.cursorPosition model.visibleOutput
+                , command = NoCommand
+                , cursorPosition = ( Tuple.first model.cursorPosition, 0 )
+            }
+
         MoveCursor updatedPosition ->
             { model
                 | command = NoCommand
@@ -434,6 +442,24 @@ deleteChar cursorPosition visibleOutput =
         |> mergeVisibleOutput
 
 
+clearLine : CursorPosition -> VisibleOutput -> VisibleOutput
+clearLine cursorPosition visibleOutput =
+    splitVisibleOutputAt cursorPosition visibleOutput
+        |> (\splitted ->
+                case splitted.currentLnLeft of
+                    [] ->
+                        splitted
+
+                    block :: restBlocks ->
+                        let
+                            ( _, remainder ) =
+                                splitBlockAt 1 block
+                        in
+                        { splitted | currentLnLeft = [], currentLnRight = [] }
+           )
+        |> mergeVisibleOutput
+
+
 insertChar : CursorPosition -> Block Char -> VisibleOutput -> VisibleOutput
 insertChar cursorPosition charBlock visibleOutput =
     splitVisibleOutputAt cursorPosition visibleOutput
@@ -577,6 +603,11 @@ lineBreak =
 clearScreen : ScreenCommand
 clearScreen =
     ClearScreen
+
+
+clearLn : ScreenCommand
+clearLn =
+    ClearLn
 
 
 delete : ScreenCommand

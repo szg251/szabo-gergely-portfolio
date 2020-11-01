@@ -46,6 +46,7 @@ type alias Model =
     { prompt : String
     , inputBuffer : List Char
     , history : List String
+    , historyIndex : Maybe Int
     , commandDict : Dict String Command
     , promptCursor : Int
     , navKey : Nav.Key
@@ -67,6 +68,7 @@ init { commands, initCommand, navKey } =
             { prompt = "$"
             , inputBuffer = []
             , history = []
+            , historyIndex = Nothing
             , commandDict = commandDict
             , promptCursor = 0
             , navKey = navKey
@@ -75,22 +77,26 @@ init { commands, initCommand, navKey } =
     ( model
     , case initCommand of
         Nothing ->
-            printPrompt model
+            printPrompt model.prompt True
 
         Just firstCommand ->
             Screen.batch
                 [ evalCommand commandDict firstCommand
-                , printPrompt model
+                , printPrompt model.prompt True
                 ]
     )
 
 
-printPrompt : Model -> ScreenCommand
-printPrompt model =
-    Screen.batch
-        [ Screen.lineBreak
-        , Screen.printColored (rgb 0 255 0) (model.prompt ++ " ")
-        ]
+printPrompt : String -> Bool -> ScreenCommand
+printPrompt prompt withLineBreak =
+    if withLineBreak then
+        Screen.batch
+            [ Screen.lineBreak
+            , Screen.printColored (rgb 0 255 0) (prompt ++ " ")
+            ]
+
+    else
+        Screen.printColored (rgb 0 255 0) (prompt ++ " ")
 
 
 parseCommand : String -> Result (List DeadEnd) ( String, List String )
@@ -137,18 +143,6 @@ argHelp revArgs =
         , succeed ()
             |> Parser.map (\_ -> Done (List.reverse revArgs))
         ]
-
-
-
--- evalCommand : Dict String Command -> String -> ScreenCommand
--- evalCommand commandDict input =
---     case parseCommand input of
---         Err _ ->
---             Screen.printLn (input ++ " not found")
---         Ok ( commandName, args ) ->
---             Dict.get commandName commandDict
---                 |> Maybe.map (\command -> command Nothing args |> Screen.printLn)
---                 |> Maybe.withDefault (Screen.printLn ("command not found: " ++ commandName))
 
 
 evalCommand : Dict String Command -> ( String, List String ) -> ScreenCommand
@@ -226,10 +220,61 @@ keyDown model key =
                 ( model, Screen.noCommand, Cmd.none )
 
         ArrowUp ->
-            ( model, Screen.noCommand, Cmd.none )
+            let
+                nextHistoryIndex =
+                    case model.historyIndex of
+                        Nothing ->
+                            0
+
+                        Just index ->
+                            min (List.length model.history) (index + 1)
+
+                selectedHistory =
+                    ListE.getAt nextHistoryIndex model.history
+            in
+            case selectedHistory of
+                Nothing ->
+                    ( model, Screen.noCommand, Cmd.none )
+
+                Just string ->
+                    ( { model
+                        | historyIndex = Just nextHistoryIndex
+                        , inputBuffer = String.toList string |> List.reverse
+                        , promptCursor = String.length string
+                      }
+                    , Screen.batch
+                        [ Screen.clearLn
+                        , printPrompt model.prompt False
+                        , Screen.print string
+                        ]
+                    , Cmd.none
+                    )
 
         ArrowDown ->
-            ( model, Screen.noCommand, Cmd.none )
+            let
+                nextHistoryIndex =
+                    Maybe.map (\index -> max 0 (index - 1)) model.historyIndex
+
+                selectedHistory =
+                    Maybe.andThen (\index -> ListE.getAt index model.history) nextHistoryIndex
+            in
+            case selectedHistory of
+                Nothing ->
+                    ( model, Screen.noCommand, Cmd.none )
+
+                Just string ->
+                    ( { model
+                        | historyIndex = nextHistoryIndex
+                        , inputBuffer = String.toList string |> List.reverse
+                        , promptCursor = String.length string
+                      }
+                    , Screen.batch
+                        [ Screen.clearLn
+                        , printPrompt model.prompt False
+                        , Screen.print string
+                        ]
+                    , Cmd.none
+                    )
 
         Backspace ->
             if model.promptCursor > 0 then
@@ -259,13 +304,15 @@ keyDown model key =
             ( { model
                 | inputBuffer = []
                 , promptCursor = 0
+                , history = command :: model.history
+                , historyIndex = Nothing
               }
             , Screen.batch
                 [ Screen.lineBreak
                 , parsedCommand
                     |> Result.map (evalCommand model.commandDict)
                     |> Result.withDefault (Screen.printLn (command ++ " not found"))
-                , printPrompt model
+                , printPrompt model.prompt True
                 ]
             , parsedCommand
                 |> Result.map (pushCommandUrl model.navKey)
