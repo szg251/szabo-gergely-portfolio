@@ -2,6 +2,7 @@ module FigletTest exposing (..)
 
 import Expect exposing (Expectation)
 import Figlet exposing (fontCharParser)
+import Figlet.Font
 import Html exposing (header)
 import Parser
 import Test exposing (..)
@@ -116,7 +117,7 @@ suite =
             )
         , test "parsing standard font succeeds"
             (\_ ->
-                Expect.ok (Parser.run Figlet.fontParser Figlet.standard)
+                Expect.ok (Parser.run Figlet.fontParser Figlet.Font.standard)
             )
         , test "toLines"
             (\_ ->
@@ -126,7 +127,7 @@ suite =
                             (\font ->
                                 Figlet.toLines font "str"
                             )
-                            (Parser.run Figlet.fontParser Figlet.standard)
+                            (Parser.run Figlet.fontParser Figlet.Font.standard)
 
                     expected =
                         Ok
