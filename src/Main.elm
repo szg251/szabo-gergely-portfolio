@@ -6,6 +6,7 @@ import Browser.Events
 import Browser.Navigation as Nav
 import Command
 import Device exposing (Device, WindowSize)
+import Figlet
 import Html.Styled
 import Http
 import Json.Decode as Decode exposing (decodeValue)
@@ -52,7 +53,11 @@ init flags url key =
 
         ( terminalModel, screenCmd ) =
             Terminal.init
-                { commands = [ ( "echo", Command.echo ) ]
+                { commands =
+                    [ ( "echo", Command.echo )
+                    , ( "figlet", Figlet.run )
+                    , ( "clear", Command.clear )
+                    ]
                 , initCommand = Just initCommand
                 , navKey = key
                 }

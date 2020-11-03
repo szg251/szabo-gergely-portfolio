@@ -14,22 +14,7 @@ for n fn x =
 suite : Test
 suite =
     describe "Terminal"
-        [ test "converts keypress into screen command"
-            (\_ ->
-                let
-                    ( terminal, _ ) =
-                        Terminal.init [] Nothing
-
-                    expectedTerminal =
-                        { terminal
-                            | inputBuffer = [ 'a' ]
-                            , promptCursor = 1
-                        }
-                in
-                Expect.equal (Terminal.keyDown terminal (Character 'a'))
-                    ( expectedTerminal, Print (NormalBlock "a") )
-            )
-        , test "parse command"
+        [ test "parse command"
             (\_ ->
                 Expect.equal
                     (Terminal.parseCommand "echo \"Hello World\" and good night")

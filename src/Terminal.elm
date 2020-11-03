@@ -148,7 +148,7 @@ argHelp revArgs =
 evalCommand : Dict String Command -> ( String, List String ) -> ScreenCommand
 evalCommand commandDict ( commandName, args ) =
     Dict.get commandName commandDict
-        |> Maybe.map (\command -> command Nothing args |> Screen.printLn)
+        |> Maybe.map (\command -> command Nothing args)
         |> Maybe.withDefault (Screen.printLn ("command not found: " ++ commandName))
 
 

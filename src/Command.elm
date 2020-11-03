@@ -1,10 +1,17 @@
 module Command exposing (..)
 
+import Screen exposing (ScreenCommand)
+
 
 type alias Command =
-    Maybe String -> List String -> String
+    Maybe String -> List String -> ScreenCommand
 
 
 echo : Command
 echo _ args =
-    String.join " " args
+    Screen.printLn (String.join " " args)
+
+
+clear : Command
+clear _ _ =
+    Screen.clearScreen
