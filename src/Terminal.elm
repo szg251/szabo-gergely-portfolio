@@ -192,7 +192,15 @@ keyDown model key =
     case key of
         Character char ->
             ( { model
-                | inputBuffer = char :: model.inputBuffer
+                | inputBuffer =
+                    let
+                        revIndex =
+                            List.length model.inputBuffer - model.promptCursor
+
+                        ( left, right ) =
+                            ListE.splitAt revIndex model.inputBuffer
+                    in
+                    left ++ char :: right
                 , promptCursor = model.promptCursor + 1
               }
             , Screen.print (String.fromChar char)
