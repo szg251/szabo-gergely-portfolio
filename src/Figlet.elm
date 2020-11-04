@@ -40,10 +40,14 @@ run pipedInput args =
             Dict.fromList
                 [ ( "standard", Font.standard )
                 , ( "starwars", Font.starwars )
+                , ( "mini", Font.mini )
+                , ( "small", Font.small )
+                , ( "block", Font.block )
+                , ( "slant", Font.slant )
                 ]
 
         fontName =
-            "starwars"
+            "slant"
 
         parsedFont =
             Dict.get fontName fonts
