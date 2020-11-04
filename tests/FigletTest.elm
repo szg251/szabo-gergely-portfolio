@@ -25,8 +25,8 @@ suite =
                             , maxLength = 16
                             , oldLayout = 15
                             , commentLines = 11
-                            , printDirection = 0
-                            , fullLayout = 24463
+                            , printDirection = Just 0
+                            , fullLayout = Just 24463
                             , codetagCount = Nothing
                             }
                 in
