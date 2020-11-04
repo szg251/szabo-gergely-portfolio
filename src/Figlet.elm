@@ -131,27 +131,37 @@ joinLines fontParams inputL inputR =
                 (\xs ys ->
                     case ( stringUnconsLast xs, String.uncons ys ) of
                         ( Just ( lastOfLeft, restOfLeft ), Just ( firstOfRight, restOfRight ) ) ->
-                            case smushSpaces ( lastOfLeft, firstOfRight ) of
-                                Ok smushedChar ->
-                                    Ok
-                                        { left = stringConsLast smushedChar restOfLeft
-                                        , right = restOfRight
-                                        , fallback = xs ++ ys
-                                        , spacesOnly = True
-                                        }
+                            ResultE.or
+                                (smushSpaces ( lastOfLeft, firstOfRight )
+                                    |> Result.map
+                                        (\( smushedChar, smushDirection ) ->
+                                            case smushDirection of
+                                                LeftChar ->
+                                                    { left = stringConsLast smushedChar restOfLeft
+                                                    , right = restOfRight
+                                                    , fallback = xs ++ ys
+                                                    , spacesOnly = True
+                                                    }
 
-                                Err _ ->
-                                    case smushChars fontParams ( lastOfLeft, firstOfRight ) of
-                                        Ok smushedChar ->
-                                            Ok
-                                                { left = restOfLeft
-                                                , right = String.cons smushedChar restOfRight
-                                                , fallback = xs ++ ys
-                                                , spacesOnly = False
-                                                }
-
-                                        Err _ ->
-                                            Err (xs ++ ys)
+                                                RightChar ->
+                                                    { left = restOfLeft
+                                                    , right = String.cons smushedChar restOfRight
+                                                    , fallback = xs ++ ys
+                                                    , spacesOnly = True
+                                                    }
+                                        )
+                                )
+                                (smushChars fontParams ( lastOfLeft, firstOfRight )
+                                    |> Result.map
+                                        (\smushedChar ->
+                                            { left = restOfLeft
+                                            , right = String.cons smushedChar restOfRight
+                                            , fallback = xs ++ ys
+                                            , spacesOnly = False
+                                            }
+                                        )
+                                )
+                                |> Result.mapError (always (xs ++ ys))
 
                         _ ->
                             Err (xs ++ ys)
@@ -381,13 +391,18 @@ smushChars fontParams chars =
         |> ResultE.orElseLazy (\() -> hardblankSmushing fontParams.hardblank chars)
 
 
-smushSpaces : ( Char, Char ) -> Result ( Char, Char ) Char
+type SmushDirection
+    = LeftChar
+    | RightChar
+
+
+smushSpaces : ( Char, Char ) -> Result ( Char, Char ) ( Char, SmushDirection )
 smushSpaces ( ch1, ch2 ) =
     if ch1 == ' ' then
-        Ok ch2
+        Ok ( ch2, RightChar )
 
     else if ch2 == ' ' then
-        Ok ch1
+        Ok ( ch1, LeftChar )
 
     else
         Err ( ch1, ch2 )
