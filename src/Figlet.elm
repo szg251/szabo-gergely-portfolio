@@ -29,12 +29,40 @@ import Result.Extra as ResultE
 import Screen
 
 
+type Option
+    = FontName String
+    | Width Int
+    | Input (List String)
+
+
 run : Command
 run pipedInput args =
     let
-        input =
-            pipedInput
-                |> Maybe.withDefault (String.join " " args)
+        defaultOptions =
+            { fontName = "standard"
+            , width = 80
+            , input = ""
+            }
+
+        options =
+            List.foldl
+                (\opt opts ->
+                    case opt of
+                        FontName name ->
+                            { opts | fontName = name }
+
+                        Width width ->
+                            { opts | width = width }
+
+                        Input words ->
+                            { opts
+                                | input =
+                                    pipedInput
+                                        |> Maybe.withDefault (String.join " " words)
+                            }
+                )
+                defaultOptions
+                (readOptions args)
 
         fonts =
             Dict.fromList
@@ -46,22 +74,42 @@ run pipedInput args =
                 , ( "slant", Font.slant )
                 ]
 
-        fontName =
-            "slant"
-
         parsedFont =
-            Dict.get fontName fonts
+            Dict.get options.fontName fonts
                 |> Maybe.andThen (Parser.run fontParser >> Result.toMaybe)
     in
     case parsedFont of
         Nothing ->
-            Screen.printLn "Unable to open font file"
+            Screen.printLn ("Unable to open font file: " ++ options.fontName)
 
         Just font ->
             Screen.batch
-                (toLines font input
+                (toLines font options.input
                     |> List.map Screen.printLn
                 )
+
+
+readOptions : List String -> List Option
+readOptions args =
+    case args of
+        fst :: snd :: rest ->
+            case fst of
+                "-f" ->
+                    FontName snd :: readOptions rest
+
+                "-w" ->
+                    case String.toInt snd of
+                        Just int ->
+                            Width int :: readOptions rest
+
+                        Nothing ->
+                            readOptions rest
+
+                _ ->
+                    readOptions rest
+
+        _ ->
+            [ Input args ]
 
 
 toLines : Font -> String -> List String
