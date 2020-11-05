@@ -32,7 +32,7 @@ import Screen
 type Option
     = FontName String
     | Width Int
-    | Input (List String)
+    | Input String
 
 
 run : Command
@@ -54,11 +54,10 @@ run pipedInput args =
                         Width width ->
                             { opts | width = width }
 
-                        Input words ->
+                        Input input ->
                             { opts
                                 | input =
-                                    pipedInput
-                                        |> Maybe.withDefault (String.join " " words)
+                                    Maybe.withDefault input pipedInput
                             }
                 )
                 defaultOptions
@@ -93,23 +92,27 @@ readOptions : List String -> List Option
 readOptions args =
     case args of
         fst :: snd :: rest ->
-            case fst of
-                "-f" ->
-                    FontName snd :: readOptions rest
+            if String.startsWith "-" fst then
+                case fst of
+                    "-f" ->
+                        FontName snd :: readOptions rest
 
-                "-w" ->
-                    case String.toInt snd of
-                        Just int ->
-                            Width int :: readOptions rest
+                    "-w" ->
+                        case String.toInt snd of
+                            Just int ->
+                                Width int :: readOptions rest
 
-                        Nothing ->
-                            readOptions rest
+                            Nothing ->
+                                readOptions rest
 
-                _ ->
-                    readOptions rest
+                    _ ->
+                        readOptions (snd :: rest)
+
+            else
+                [ Input (String.join " " args) ]
 
         _ ->
-            [ Input args ]
+            [ Input (String.join " " args) ]
 
 
 toLines : Font -> String -> List String
@@ -317,7 +320,7 @@ skipLines n =
             if counter == 0 then
                 succeed (Done ())
 
-                 else
+            else
                 succeed (Loop (counter - 1))
                     |. chompUntil "\n"
                     |. chompIf ((==) '\n')
