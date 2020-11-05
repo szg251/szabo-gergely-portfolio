@@ -1,5 +1,6 @@
 module Screen exposing (..)
 
+import Browser.Dom
 import Css exposing (..)
 import Css.Global as Global exposing (body, global)
 import Html
@@ -7,6 +8,13 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, href, style)
 import List.Extra as ListE
 import Svg.Attributes exposing (visibility)
+import Task
+
+
+type Msg
+    = NoOp
+    | Tick
+    | AppendCommand ScreenCommand
 
 
 type alias Model =
@@ -178,19 +186,34 @@ type alias CursorPosition =
     ( Int, Int )
 
 
-init : ScreenCommand -> Model
+init : ScreenCommand -> ( Model, Cmd Msg )
 init command =
-    { command = command
-    , visibleOutput = [ Line [] ]
-    , counter = 0
-    , cursorVisible = True
-    , cursorPosition = ( 0, 0 )
-    }
+    ( { command = command
+      , visibleOutput = [ Line [] ]
+      , counter = 0
+      , cursorVisible = True
+      , cursorPosition = ( 0, 0 )
+      }
+    , Cmd.none
+    )
 
 
-tick : Model -> Model
+tick : Model -> ( Model, Cmd Msg )
 tick =
     count >> blinkCursor >> evalCommand
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
+        Tick ->
+            tick model
+
+        AppendCommand command ->
+            appendCommand command model
 
 
 count : Model -> Model
@@ -207,38 +230,50 @@ blinkCursor model =
         { model | cursorVisible = not model.cursorVisible }
 
 
-appendCommand : ScreenCommand -> Model -> Model
+appendCommand : ScreenCommand -> Model -> ( Model, Cmd Msg )
 appendCommand command model =
     case model.command of
         NoCommand ->
-            { model | command = command }
+            ( { model | command = command }, Cmd.none )
 
         Batch commands ->
-            { model | command = Batch (commands ++ [ command ]) }
+            ( { model | command = Batch (commands ++ [ command ]) }, Cmd.none )
 
         prevCommand ->
-            { model | command = Batch (prevCommand :: [ command ]) }
+            ( { model | command = Batch (prevCommand :: [ command ]) }, Cmd.none )
 
 
-evalCommand : Model -> Model
+scrollToBottom : Cmd Msg
+scrollToBottom =
+    Task.perform (\_ -> NoOp)
+        (Browser.Dom.getViewport
+            |> Task.andThen
+                (\{ scene, viewport } ->
+                    Browser.Dom.setViewport 1000 1000
+                )
+        )
+
+
+evalCommand : Model -> ( Model, Cmd Msg )
 evalCommand model =
     case model.command of
         NoCommand ->
-            model
+            ( model, Cmd.none )
 
         LineBreak ->
-            evalCommand
-                { model
-                    | visibleOutput = Line [] :: model.visibleOutput
-                    , command = NoCommand
-                    , cursorPosition =
-                        ( Tuple.first model.cursorPosition + 1, 0 )
-                }
+            ( { model
+                | visibleOutput = Line [] :: model.visibleOutput
+                , command = NoCommand
+                , cursorPosition =
+                    ( Tuple.first model.cursorPosition + 1, 0 )
+              }
+            , scrollToBottom
+            )
 
         Print block ->
             case unconsBlock block of
                 Just ( firstChar, lastChars ) ->
-                    { model
+                    ( { model
                         | visibleOutput =
                             insertChar model.cursorPosition
                                 firstChar
@@ -248,57 +283,71 @@ evalCommand model =
                             ( Tuple.first model.cursorPosition
                             , Tuple.second model.cursorPosition + 1
                             )
-                    }
+                      }
+                    , Cmd.none
+                    )
 
                 Nothing ->
-                    { model | command = NoCommand }
+                    ( { model | command = NoCommand }, Cmd.none )
 
         Delete ->
-            { model
+            ( { model
                 | visibleOutput = deleteChar model.cursorPosition model.visibleOutput
                 , command = NoCommand
                 , cursorPosition =
                     ( Tuple.first model.cursorPosition
                     , max 0 (Tuple.second model.cursorPosition - 1)
                     )
-            }
+              }
+            , Cmd.none
+            )
 
         ClearScreen ->
-            { model
+            ( { model
                 | visibleOutput = []
                 , cursorPosition = ( 0, 0 )
                 , command = NoCommand
-            }
+              }
+            , Cmd.none
+            )
 
         ClearLn ->
-            { model
+            ( { model
                 | visibleOutput = clearLine model.cursorPosition model.visibleOutput
                 , command = NoCommand
                 , cursorPosition = ( Tuple.first model.cursorPosition, 0 )
-            }
+              }
+            , Cmd.none
+            )
 
         MoveCursor updatedPosition ->
-            { model
+            ( { model
                 | command = NoCommand
                 , cursorPosition = updatedPosition model.cursorPosition
-            }
+              }
+            , scrollToBottom
+            )
 
         Batch commands ->
             case commands of
                 [] ->
-                    { model | command = NoCommand }
+                    ( { model | command = NoCommand }, Cmd.none )
 
                 firstCommand :: restCommands ->
                     let
-                        evaled =
+                        ( evaled, cmd ) =
                             evalCommand
                                 { model | command = firstCommand }
                     in
                     if evaled.command == NoCommand then
-                        evalCommand { evaled | command = Batch restCommands }
+                        let
+                            ( evaledAgain, nextCmd ) =
+                                evalCommand { evaled | command = Batch restCommands }
+                        in
+                        ( evaledAgain, Cmd.batch [ cmd, nextCmd ] )
 
                     else
-                        { evaled | command = Batch (evaled.command :: restCommands) }
+                        ( { evaled | command = Batch (evaled.command :: restCommands) }, cmd )
 
 
 getLastPosition : VisibleOutput -> CursorPosition

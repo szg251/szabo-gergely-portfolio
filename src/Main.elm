@@ -61,15 +61,18 @@ init flags url key =
                 , initCommand = Just initCommand
                 , navKey = key
                 }
+
+        ( screenModel, cmd ) =
+            Screen.init screenCmd
     in
     ( { key = key
       , page = Initializing
       , nextUrl = url
       , device = Device.fromWindowSize flags.windowSize
-      , screenModel = Screen.init screenCmd
+      , screenModel = screenModel
       , terminalModel = terminalModel
       }
-    , Cmd.none
+    , cmd |> Cmd.map ScreenMsg
     )
 
 
@@ -78,8 +81,8 @@ type Msg
     | GotWindowSize { width : Int, height : Int }
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
-    | Tick
     | KeyPressed Terminal.Key
+    | ScreenMsg Screen.Msg
 
 
 type Page
@@ -108,20 +111,30 @@ update msg model =
         UrlChanged url ->
             loadPage { model | nextUrl = url }
 
-        Tick ->
-            ( { model | screenModel = Screen.tick model.screenModel }, Cmd.none )
-
         KeyPressed key ->
             let
-                ( updatedTerminalModel, screenCmd, cmd ) =
+                ( updatedTerminalModel, screenCmd, cmdT ) =
                     Terminal.keyDown model.terminalModel key
+
+                ( updatedScreenModel, cmdS ) =
+                    Screen.update (Screen.AppendCommand screenCmd) model.screenModel
             in
             ( { model
                 | terminalModel = updatedTerminalModel
-                , screenModel = Screen.appendCommand screenCmd model.screenModel
+                , screenModel = updatedScreenModel
               }
-            , cmd
+            , Cmd.batch
+                [ cmdT
+                , cmdS |> Cmd.map ScreenMsg
+                ]
             )
+
+        ScreenMsg screenMsg ->
+            let
+                ( updatedScreenModel, cmd ) =
+                    Screen.update screenMsg model.screenModel
+            in
+            ( { model | screenModel = updatedScreenModel }, cmd |> Cmd.map ScreenMsg )
 
 
 loadPage : Model -> ( Model, Cmd Msg )
@@ -151,7 +164,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Browser.Events.onResize (\w h -> GotWindowSize { width = w, height = h })
-        , Browser.Events.onAnimationFrame (always Tick)
+        , Browser.Events.onAnimationFrame (always (ScreenMsg Screen.Tick))
         , Browser.Events.onKeyDown (Decode.map KeyPressed Terminal.keyDecoder)
         , Browser.Events.onKeyPress (Decode.map KeyPressed Terminal.keyDecoder)
         ]
