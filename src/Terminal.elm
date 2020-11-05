@@ -31,6 +31,11 @@ import Url.Parser exposing ((<?>))
 import Url.Parser.Query
 
 
+type Msg
+    = KeyDown Key
+    | ScreenWidthChanged Int
+
+
 type Key
     = Character Char
     | ArrowLeft
@@ -50,6 +55,7 @@ type alias Model =
     , commandDict : Dict String Command
     , promptCursor : Int
     , navKey : Nav.Key
+    , screenWidth : Int
     }
 
 
@@ -57,21 +63,20 @@ init :
     { commands : List ( String, Command )
     , initCommand : Maybe ( String, List String )
     , navKey : Nav.Key
+    , screenWidth : Int
     }
     -> ( Model, ScreenCommand )
-init { commands, initCommand, navKey } =
+init { commands, initCommand, navKey, screenWidth } =
     let
-        commandDict =
-            Dict.fromList commands
-
         model =
             { prompt = "$"
             , inputBuffer = []
             , history = []
             , historyIndex = Nothing
-            , commandDict = commandDict
+            , commandDict = Dict.fromList commands
             , promptCursor = 0
             , navKey = navKey
+            , screenWidth = screenWidth
             }
     in
     ( model
@@ -81,7 +86,7 @@ init { commands, initCommand, navKey } =
 
         Just firstCommand ->
             Screen.batch
-                [ evalCommand commandDict firstCommand
+                [ evalCommand model firstCommand
                 , printPrompt model.prompt True
                 ]
     )
@@ -145,10 +150,10 @@ argHelp revArgs =
         ]
 
 
-evalCommand : Dict String Command -> ( String, List String ) -> ScreenCommand
-evalCommand commandDict ( commandName, args ) =
-    Dict.get commandName commandDict
-        |> Maybe.map (\command -> command Nothing args)
+evalCommand : Model -> ( String, List String ) -> ScreenCommand
+evalCommand model ( commandName, args ) =
+    Dict.get commandName model.commandDict
+        |> Maybe.map (\command -> command { screenWidth = model.screenWidth, args = args } Nothing)
         |> Maybe.withDefault (Screen.printLn ("command not found: " ++ commandName))
 
 
@@ -187,7 +192,17 @@ toKey string =
                     Invalid
 
 
-keyDown : Model -> Key -> ( Model, ScreenCommand, Cmd msg )
+update : Msg -> Model -> ( Model, ScreenCommand, Cmd Msg )
+update msg model =
+    case msg of
+        KeyDown key ->
+            keyDown model key
+
+        ScreenWidthChanged screenWidth ->
+            ( { model | screenWidth = screenWidth }, Screen.noCommand, Cmd.none )
+
+
+keyDown : Model -> Key -> ( Model, ScreenCommand, Cmd Msg )
 keyDown model key =
     case key of
         Character char ->
@@ -318,7 +333,7 @@ keyDown model key =
             , Screen.batch
                 [ Screen.lineBreak
                 , parsedCommand
-                    |> Result.map (evalCommand model.commandDict)
+                    |> Result.map (evalCommand model)
                     |> Result.withDefault (Screen.printLn (command ++ " not found"))
                 , printPrompt model.prompt True
                 ]

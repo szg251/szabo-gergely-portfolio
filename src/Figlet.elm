@@ -29,19 +29,14 @@ import Result.Extra as ResultE
 import Screen
 
 
-type Option
-    = FontName String
-    | Width Int
-    | Input String
-
-
 run : Command
-run pipedInput args =
+run { args, screenWidth } pipedInput =
     let
         defaultOptions =
             { fontName = "standard"
-            , width = 80
+            , width = screenWidth
             , input = ""
+            , align = Left
             }
 
         options =
@@ -59,6 +54,9 @@ run pipedInput args =
                                 | input =
                                     Maybe.withDefault input pipedInput
                             }
+
+                        Align align ->
+                            { opts | align = align }
                 )
                 defaultOptions
                 (readOptions args)
@@ -83,9 +81,22 @@ run pipedInput args =
 
         Just font ->
             Screen.batch
-                (toLines font options.input
+                (toLines font options.width options.align options.input
                     |> List.map Screen.printLn
                 )
+
+
+type Option
+    = FontName String
+    | Width Int
+    | Input String
+    | Align Align
+
+
+type Align
+    = Left
+    | Center
+    | Right
 
 
 readOptions : List String -> List Option
@@ -105,6 +116,15 @@ readOptions args =
                             Nothing ->
                                 readOptions rest
 
+                    "-c" ->
+                        Align Center :: readOptions (snd :: rest)
+
+                    "-l" ->
+                        Align Left :: readOptions (snd :: rest)
+
+                    "-r" ->
+                        Align Right :: readOptions (snd :: rest)
+
                     _ ->
                         readOptions (snd :: rest)
 
@@ -115,29 +135,63 @@ readOptions args =
             [ Input (String.join " " args) ]
 
 
-toLines : Font -> String -> List String
-toLines font input =
+toLines : Font -> Int -> Align -> String -> List String
+toLines font maxWidth align input =
     let
         charCodes =
             input
                 |> String.toList
                 |> List.map Char.toCode
 
-        empty =
+        emptyLines =
             List.repeat font.params.height ""
+
+        alignText length lines =
+            case align of
+                Left ->
+                    lines
+
+                Right ->
+                    List.map (\text -> String.trimRight (String.repeat (maxWidth - length) " " ++ text)) lines
+
+                Center ->
+                    List.map
+                        (\text -> String.trimRight (String.repeat ((maxWidth - length) // 2) " " ++ text))
+                        lines
     in
     charCodes
         |> List.foldl
-            (\code lines ->
+            (\code ( lines, rows ) ->
                 let
                     charLines =
                         Dict.get code font.chars
                             |> Maybe.map .lines
-                            |> Maybe.withDefault empty
+                            |> Maybe.withDefault emptyLines
+
+                    joined =
+                        joinLines font.params lines charLines
+
+                    length =
+                        List.map String.length joined
+                            |> List.maximum
+                            |> Maybe.withDefault 0
                 in
-                joinLines font.params lines charLines
+                if length > maxWidth then
+                    ( charLines, rows ++ [ alignText length lines ] )
+
+                else
+                    ( joined, rows )
             )
-            empty
+            ( emptyLines, [] )
+        |> (\( lastRow, rows ) ->
+                let
+                    length =
+                        List.map String.length lastRow
+                            |> List.maximum
+                            |> Maybe.withDefault 0
+                in
+                List.concat (rows ++ [ alignText length lastRow ])
+           )
         |> List.map (String.replace (String.fromChar font.params.hardblank) " ")
 
 

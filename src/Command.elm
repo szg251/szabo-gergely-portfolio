@@ -4,11 +4,17 @@ import Screen exposing (ScreenCommand)
 
 
 type alias Command =
-    Maybe String -> List String -> ScreenCommand
+    Environment -> Maybe String -> ScreenCommand
+
+
+type alias Environment =
+    { screenWidth : Int
+    , args : List String
+    }
 
 
 echo : Command
-echo _ args =
+echo { args } _ =
     Screen.printLn (String.join " " args)
 
 

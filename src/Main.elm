@@ -60,6 +60,7 @@ init flags url key =
                     ]
                 , initCommand = Just initCommand
                 , navKey = key
+                , screenWidth = Screen.pxToWidth flags.windowSize.width
                 }
 
         ( screenModel, cmd ) =
@@ -78,10 +79,10 @@ init flags url key =
 
 type Msg
     = NoOp
-    | GotWindowSize { width : Int, height : Int }
+    | WindowSizeChanged { width : Int, height : Int }
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
-    | KeyPressed Terminal.Key
+    | TerminalMsg Terminal.Msg
     | ScreenMsg Screen.Msg
 
 
@@ -97,8 +98,10 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
-        GotWindowSize windowSize ->
-            ( { model | device = Device.fromWindowSize windowSize }, Cmd.none )
+        WindowSizeChanged windowSize ->
+            updateTerminal
+                (Terminal.ScreenWidthChanged (Screen.pxToWidth windowSize.width))
+                ( { model | device = Device.fromWindowSize windowSize }, Cmd.none )
 
         UrlRequested urlRequest ->
             case urlRequest of
@@ -111,30 +114,40 @@ update msg model =
         UrlChanged url ->
             loadPage { model | nextUrl = url }
 
-        KeyPressed key ->
-            let
-                ( updatedTerminalModel, screenCmd, cmdT ) =
-                    Terminal.keyDown model.terminalModel key
-
-                ( updatedScreenModel, cmdS ) =
-                    Screen.update (Screen.AppendCommand screenCmd) model.screenModel
-            in
-            ( { model
-                | terminalModel = updatedTerminalModel
-                , screenModel = updatedScreenModel
-              }
-            , Cmd.batch
-                [ cmdT
-                , cmdS |> Cmd.map ScreenMsg
-                ]
-            )
+        TerminalMsg terminalMsg ->
+            updateTerminal terminalMsg ( model, Cmd.none )
 
         ScreenMsg screenMsg ->
-            let
-                ( updatedScreenModel, cmd ) =
-                    Screen.update screenMsg model.screenModel
-            in
-            ( { model | screenModel = updatedScreenModel }, cmd |> Cmd.map ScreenMsg )
+            updateScreen screenMsg ( model, Cmd.none )
+
+
+updateScreen : Screen.Msg -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+updateScreen screenMsg ( model, prevCmd ) =
+    let
+        ( updatedScreenModel, cmd ) =
+            Screen.update screenMsg model.screenModel
+    in
+    ( { model | screenModel = updatedScreenModel }
+    , Cmd.batch
+        [ Cmd.map ScreenMsg cmd
+        , prevCmd
+        ]
+    )
+
+
+updateTerminal : Terminal.Msg -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+updateTerminal terminalMsg ( model, prevCmd ) =
+    let
+        ( updatedTerminalModel, screenMsg, cmdT ) =
+            Terminal.update terminalMsg model.terminalModel
+    in
+    updateScreen (Screen.AppendCommand screenMsg)
+        ( { model | terminalModel = updatedTerminalModel }
+        , Cmd.batch
+            [ prevCmd
+            , Cmd.map TerminalMsg cmdT
+            ]
+        )
 
 
 loadPage : Model -> ( Model, Cmd Msg )
@@ -163,8 +176,7 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Browser.Events.onResize (\w h -> GotWindowSize { width = w, height = h })
+        [ Browser.Events.onResize (\w h -> WindowSizeChanged { width = w, height = h })
         , Browser.Events.onAnimationFrame (always (ScreenMsg Screen.Tick))
-        , Browser.Events.onKeyDown (Decode.map KeyPressed Terminal.keyDecoder)
-        , Browser.Events.onKeyPress (Decode.map KeyPressed Terminal.keyDecoder)
+        , Browser.Events.onKeyDown (Decode.map (Terminal.KeyDown >> TerminalMsg) Terminal.keyDecoder)
         ]

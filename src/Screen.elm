@@ -363,6 +363,11 @@ getLastPosition visibleOutput =
     )
 
 
+pxToWidth : Int -> Int
+pxToWidth pixels =
+    ((pixels - 40) // 10) - 10
+
+
 splitVisibleOutputAt :
     CursorPosition
     -> VisibleOutput
