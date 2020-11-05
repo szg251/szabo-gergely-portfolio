@@ -314,15 +314,13 @@ skipLines n =
     let
         helper : Int -> Parser (Step Int ())
         helper counter =
-            succeed
-                (if counter == 0 then
-                    Done ()
+            if counter == 0 then
+                succeed (Done ())
 
                  else
-                    Loop (counter - 1)
-                )
-                |. chompUntil "\n"
-                |. chompIf ((==) '\n')
+                succeed (Loop (counter - 1))
+                    |. chompUntil "\n"
+                    |. chompIf ((==) '\n')
     in
     loop n helper
 
