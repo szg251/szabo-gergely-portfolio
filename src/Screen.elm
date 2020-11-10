@@ -7,6 +7,7 @@ import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, href, style)
 import List.Extra as ListE
+import Process
 import Svg.Attributes exposing (visibility)
 import Task
 
@@ -14,6 +15,9 @@ import Task
 type Msg
     = NoOp
     | Tick
+    | EvalNextCommand
+    | BlinkCursor
+    | Flush
     | AppendCommand ScreenCommand
 
 
@@ -194,7 +198,7 @@ init command =
       , cursorVisible = True
       , cursorPosition = ( 0, 0 )
       }
-    , Cmd.none
+    , Task.perform (always EvalNextCommand) (Process.sleep 0)
     )
 
 
@@ -212,8 +216,52 @@ update msg model =
         Tick ->
             tick model
 
+        BlinkCursor ->
+            ( blinkCursor model, Cmd.none )
+
+        EvalNextCommand ->
+            evalCommand model
+                |> scheduleNextEval
+
         AppendCommand command ->
             appendCommand command model
+                |> scheduleNextEval
+
+        Flush ->
+            flush ( model, Cmd.none )
+
+
+flush : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+flush ( model, cmd ) =
+    if model.command /= NoCommand then
+        let
+            ( nextModel, nextCmd ) =
+                evalCommand model
+        in
+        flush
+            ( nextModel
+            , Cmd.batch
+                [ cmd
+                , nextCmd
+                ]
+            )
+
+    else
+        ( model, cmd )
+
+
+scheduleNextEval : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+scheduleNextEval ( model, cmd ) =
+    if model.command /= NoCommand then
+        ( model
+        , Cmd.batch
+            [ cmd
+            , Task.perform (always EvalNextCommand) (Process.sleep 4)
+            ]
+        )
+
+    else
+        ( model, cmd )
 
 
 count : Model -> Model
@@ -624,14 +672,14 @@ print string =
     Print (NormalBlock string)
 
 
-printColored : Color -> String -> ScreenCommand
-printColored color string =
-    Print (Colored ( color, string ))
+printColored : { color : Color, text : String } -> ScreenCommand
+printColored { color, text } =
+    Print (Colored ( color, text ))
 
 
-printLink : String -> String -> ScreenCommand
-printLink href string =
-    Print (Link ( href, string ))
+printLink : { url : String, label : String } -> ScreenCommand
+printLink { url, label } =
+    Print (Link ( url, label ))
 
 
 printLn : String -> ScreenCommand

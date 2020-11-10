@@ -97,11 +97,11 @@ printPrompt prompt withLineBreak =
     if withLineBreak then
         Screen.batch
             [ Screen.lineBreak
-            , Screen.printColored (rgb 0 255 0) (prompt ++ " ")
+            , Screen.printColored { color = rgb 0 255 0, text = prompt ++ " " }
             ]
 
     else
-        Screen.printColored (rgb 0 255 0) (prompt ++ " ")
+        Screen.printColored { color = rgb 0 255 0, text = prompt ++ " " }
 
 
 parseCommand : String -> Result (List DeadEnd) ( String, List String )

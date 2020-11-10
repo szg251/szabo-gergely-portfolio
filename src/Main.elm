@@ -14,6 +14,7 @@ import ProfileImage
 import Route
 import Screen exposing (Block(..), ScreenCommand(..))
 import Terminal
+import Time
 import Url
 
 
@@ -49,7 +50,7 @@ init flags url key =
     let
         initCommand =
             Terminal.parseCommandUrl url
-                |> Maybe.withDefault ( "echo", [ "Hello World" ] )
+                |> Maybe.withDefault ( "figlet", [ "-c", "Szabo Gergely" ] )
 
         ( terminalModel, screenCmd ) =
             Terminal.init
@@ -57,6 +58,7 @@ init flags url key =
                     [ ( "echo", Command.echo )
                     , ( "figlet", Figlet.run )
                     , ( "clear", Command.clear )
+                    , ( "menu", Command.menu )
                     ]
                 , initCommand = Just initCommand
                 , navKey = key
@@ -177,6 +179,18 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Browser.Events.onResize (\w h -> WindowSizeChanged { width = w, height = h })
-        , Browser.Events.onAnimationFrame (always (ScreenMsg Screen.Tick))
-        , Browser.Events.onKeyDown (Decode.map (Terminal.KeyDown >> TerminalMsg) Terminal.keyDecoder)
+
+        -- , Browser.Events.onAnimationFrame (always (ScreenMsg Screen.Tick))
+        , Time.every 500 (always (ScreenMsg Screen.BlinkCursor))
+        , Browser.Events.onKeyDown
+            (Decode.map
+                (\key ->
+                    if key == Terminal.Enter && model.screenModel.command /= Screen.NoCommand then
+                        ScreenMsg Screen.Flush
+
+                    else
+                        TerminalMsg (Terminal.KeyDown key)
+                )
+                Terminal.keyDecoder
+            )
         ]
