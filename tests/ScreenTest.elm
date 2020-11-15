@@ -18,7 +18,8 @@ suite =
                 let
                     screen =
                         Screen.init (print "0123456789")
-                            |> for 5 Screen.tick
+                            |> Tuple.first
+                            |> for 5 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
                         [ Line [ NormalBlock [ '4', '3', '2', '1', '0' ] ]
@@ -36,7 +37,8 @@ suite =
                                 , print "4567"
                                 ]
                             )
-                            |> for 9 Screen.tick
+                            |> Tuple.first
+                            |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
                         [ Line [ NormalBlock [ '7', '6', '5', '4' ] ]
@@ -53,10 +55,11 @@ suite =
                             (batch
                                 [ print "4567"
                                 , moveCursor (always ( 0, 0 ))
-                                , printLink "https://example.com" "0123"
+                                , printLink { url = "https://example.com", label = "0123" }
                                 ]
                             )
-                            |> for 9 Screen.tick
+                            |> Tuple.first
+                            |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
                         [ Line
@@ -78,7 +81,8 @@ suite =
                                 , print "0123"
                                 ]
                             )
-                            |> for 9 Screen.tick
+                            |> Tuple.first
+                            |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
                         [ Line [ NormalBlock [ '7', '6', '5', '4', '3', '2', '1', '0' ] ] ]
@@ -93,10 +97,11 @@ suite =
                             (batch
                                 [ print "4567"
                                 , moveCursor (always ( 0, 2 ))
-                                , printLink "https://example.com" "0123"
+                                , printLink { url = "https://example.com", label = "0123" }
                                 ]
                             )
-                            |> for 9 Screen.tick
+                            |> Tuple.first
+                            |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
                         [ Line
@@ -119,7 +124,8 @@ suite =
                                 , print "0123"
                                 ]
                             )
-                            |> for 9 Screen.tick
+                            |> Tuple.first
+                            |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
                         [ Line [ NormalBlock [ '3', '2', '1', '0', ' ', ' ', '7', '6', '5', '4' ] ]
@@ -138,7 +144,8 @@ suite =
                                 , print "0123"
                                 ]
                             )
-                            |> for 9 Screen.tick
+                            |> Tuple.first
+                            |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
                         [ Line [ NormalBlock [ '3', '2', '1', '0', ' ', ' ' ] ]
@@ -152,7 +159,8 @@ suite =
             (let
                 screen =
                     Screen.init (batch [ print "01234", clearScreen ])
-                        |> for 6 Screen.tick
+                        |> Tuple.first
+                        |> for 6 (Screen.update Screen.EvalNextCommand >> Tuple.first)
              in
              Expect.all
                 [ \_ -> Expect.equal screen.visibleOutput []
@@ -170,7 +178,8 @@ suite =
                                 , delete
                                 ]
                             )
-                            |> for 8 Screen.tick
+                            |> Tuple.first
+                            |> for 8 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
                         [ Line [ NormalBlock [ '4', '3', '2', '0' ] ] ]
@@ -182,7 +191,8 @@ suite =
                 let
                     screen =
                         Screen.init (batch [ printLn "0123", print "4567" ])
-                            |> for 10 Screen.tick
+                            |> Tuple.first
+                            |> for 10 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     remergedOutput =
                         screen.visibleOutput

@@ -179,8 +179,6 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Browser.Events.onResize (\w h -> WindowSizeChanged { width = w, height = h })
-
-        -- , Browser.Events.onAnimationFrame (always (ScreenMsg Screen.Tick))
         , Time.every 500 (always (ScreenMsg Screen.BlinkCursor))
         , Browser.Events.onKeyDown
             (Decode.map

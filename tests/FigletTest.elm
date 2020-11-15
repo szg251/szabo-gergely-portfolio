@@ -125,7 +125,7 @@ suite =
                     lines =
                         Result.map
                             (\font ->
-                                Figlet.toLines font "str"
+                                Figlet.toLines font 80 Figlet.Left "str"
                             )
                             (Parser.run Figlet.fontParser Figlet.Font.standard)
 

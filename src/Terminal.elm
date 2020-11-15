@@ -347,22 +347,25 @@ keyDown model key =
 
 
 pushCommandUrl : Nav.Key -> ( String, List String ) -> Cmd msg
-pushCommandUrl navKey ( commandName, args ) =
-    Nav.pushUrl navKey
-        (Url.Builder.absolute [ commandName ]
-            (List.indexedMap
-                (\index arg ->
-                    Url.Builder.string (String.fromInt index) arg
-                )
-                args
+pushCommandUrl navKey command =
+    Nav.pushUrl navKey (buildCommandUrl command)
+
+
+buildCommandUrl : ( String, List String ) -> String
+buildCommandUrl ( commandName, args ) =
+    Url.Builder.absolute [ commandName ]
+        (List.indexedMap
+            (\index arg ->
+                Url.Builder.string (String.fromInt index) arg
             )
+            args
         )
 
 
 parseCommandUrl : Url.Url -> Maybe ( String, List String )
 parseCommandUrl url =
     let
-        toTuple commandName arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 =
+        toCommandTuple commandName arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 =
             ( commandName
             , [ arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 ] |> MaybeE.values
             )
@@ -379,6 +382,6 @@ parseCommandUrl url =
                 <?> Url.Parser.Query.string "7"
                 <?> Url.Parser.Query.string "8"
                 <?> Url.Parser.Query.string "9"
-                |> Url.Parser.map toTuple
+                |> Url.Parser.map toCommandTuple
     in
     Url.Parser.parse urlParser url

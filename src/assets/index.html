@@ -32,7 +32,9 @@
       });
 
       document.addEventListener("keydown", (e) => {
-        e.preventDefault();
+        if (!e.metaKey && !e.altKey) {
+          e.preventDefault();
+        }
       });
     </script>
   </body>

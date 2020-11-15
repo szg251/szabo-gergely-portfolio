@@ -24,18 +24,6 @@ clear _ _ =
     Screen.clearScreen
 
 
-
--- alignText : Int -> Int -> Align -> String -> String
--- alignText maxWidth length align text =
---     case align of
---         Left ->
---             text
---         Right ->
---             String.trimRight (String.repeat (maxWidth - length) " " ++ text)
---         Center ->
---             String.trimRight (String.repeat ((maxWidth - length) // 2) " " ++ text)
-
-
 menu : Command
 menu { args, screenWidth } _ =
     let

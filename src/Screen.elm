@@ -14,7 +14,6 @@ import Task
 
 type Msg
     = NoOp
-    | Tick
     | EvalNextCommand
     | BlinkCursor
     | Flush
@@ -24,7 +23,6 @@ type Msg
 type alias Model =
     { visibleOutput : VisibleOutput
     , command : ScreenCommand
-    , counter : Int
     , cursorVisible : Bool
     , cursorPosition : CursorPosition
     }
@@ -194,7 +192,6 @@ init : ScreenCommand -> ( Model, Cmd Msg )
 init command =
     ( { command = command
       , visibleOutput = [ Line [] ]
-      , counter = 0
       , cursorVisible = True
       , cursorPosition = ( 0, 0 )
       }
@@ -202,19 +199,11 @@ init command =
     )
 
 
-tick : Model -> ( Model, Cmd Msg )
-tick =
-    count >> blinkCursor >> evalCommand
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
-
-        Tick ->
-            tick model
 
         BlinkCursor ->
             ( blinkCursor model, Cmd.none )
@@ -264,18 +253,9 @@ scheduleNextEval ( model, cmd ) =
         ( model, cmd )
 
 
-count : Model -> Model
-count model =
-    { model | counter = model.counter + 1 }
-
-
 blinkCursor : Model -> Model
 blinkCursor model =
-    if modBy 30 model.counter /= 0 then
-        model
-
-    else
-        { model | cursorVisible = not model.cursorVisible }
+    { model | cursorVisible = not model.cursorVisible }
 
 
 appendCommand : ScreenCommand -> Model -> ( Model, Cmd Msg )
