@@ -1,5 +1,6 @@
 module Command exposing (..)
 
+import Dict exposing (Dict)
 import Screen exposing (ScreenCommand)
 import Url.Builder
 
@@ -8,14 +9,16 @@ type alias Command =
     Environment -> Maybe String -> ScreenCommand
 
 
-type alias Environment =
-    { screenWidth : Int
-    , args : List String
-    }
+type Environment
+    = Environment
+        { screenWidth : Int
+        , args : List String
+        , commandDict : Dict String Command
+        }
 
 
 echo : Command
-echo { args } _ =
+echo (Environment { args }) _ =
     Screen.printLn (String.join " " args)
 
 
@@ -25,7 +28,7 @@ clear _ _ =
 
 
 menu : Command
-menu { args, screenWidth } _ =
+menu (Environment { args, screenWidth }) _ =
     let
         defaultOptions =
             { urls = []

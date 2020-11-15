@@ -1,7 +1,7 @@
 module Terminal exposing (..)
 
 import Browser.Navigation as Nav
-import Command exposing (Command)
+import Command exposing (Command, Environment(..))
 import Css exposing (rgb)
 import Dict exposing (Dict)
 import Json.Decode as Decode
@@ -180,8 +180,16 @@ argHelp revArgs =
 
 evalCommand : Model -> ( String, List String ) -> ScreenCommand
 evalCommand model ( commandName, args ) =
+    let
+        environment =
+            Environment
+                { screenWidth = model.screenWidth
+                , args = args
+                , commandDict = model.commandDict
+                }
+    in
     Dict.get commandName model.commandDict
-        |> Maybe.map (\command -> command { screenWidth = model.screenWidth, args = args } Nothing)
+        |> Maybe.map (\command -> command environment Nothing)
         |> Maybe.withDefault (Screen.printLn ("command not found: " ++ commandName))
 
 

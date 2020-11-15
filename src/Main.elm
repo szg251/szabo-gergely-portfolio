@@ -13,6 +13,7 @@ import Json.Decode as Decode exposing (decodeValue)
 import ProfileImage
 import Route
 import Screen exposing (Block(..), ScreenCommand(..))
+import Script
 import Terminal
 import Time
 import Url
@@ -50,7 +51,7 @@ init flags url key =
     let
         initCommand =
             Terminal.parseCommandUrl url
-                |> Maybe.withDefault ( "figlet", [ "-c", "Szabo Gergely" ] )
+                |> Maybe.withDefault ( "home", [] )
 
         ( terminalModel, screenCmd ) =
             Terminal.init
@@ -59,6 +60,7 @@ init flags url key =
                     , ( "figlet", Figlet.run )
                     , ( "clear", Command.clear )
                     , ( "menu", Command.menu )
+                    , ( "home", Script.home )
                     ]
                 , initCommand = Just initCommand
                 , navKey = key

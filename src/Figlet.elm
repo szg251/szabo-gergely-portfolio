@@ -1,6 +1,6 @@
 module Figlet exposing (..)
 
-import Command exposing (Command)
+import Command exposing (Command, Environment(..))
 import Dict exposing (Dict)
 import Figlet.Font as Font
 import List.Extra as ListE
@@ -30,7 +30,7 @@ import Screen
 
 
 run : Command
-run { args, screenWidth } pipedInput =
+run (Environment { args, screenWidth }) pipedInput =
     let
         defaultOptions =
             { fontName = "standard"
