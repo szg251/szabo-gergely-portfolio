@@ -14,10 +14,12 @@ import Parser
         , DeadEnd
         , Parser
         , Step(..)
+        , backtrackable
         , chompUntil
         , chompUntilEndOr
         , end
         , getChompedString
+        , keyword
         , loop
         , oneOf
         , spaces
@@ -104,19 +106,41 @@ printPrompt prompt withLineBreak =
         Screen.printColored { color = rgb 0 255 0, text = prompt ++ " " }
 
 
-parseCommand : String -> Result (List DeadEnd) ( String, List String )
+type alias TerminalCommand =
+    ( String, List String )
+
+
+parseCommand : String -> Result (List DeadEnd) (List TerminalCommand)
 parseCommand =
-    Parser.run commandParser
+    Parser.run
+        (loop [] commandParserHelp)
 
 
-commandParser : Parser ( String, List String )
+commandParserHelp : List TerminalCommand -> Parser (Step (List TerminalCommand) (List TerminalCommand))
+commandParserHelp revCommands =
+    oneOf
+        [ backtrackable <|
+            succeed (\command -> Loop (command :: revCommands))
+                |. keyword "&&"
+                |. spaces
+                |= commandParser
+                |. spaces
+        , succeed (\command -> Loop (command :: revCommands))
+            |. spaces
+            |= commandParser
+            |. spaces
+        , succeed ()
+            |. end
+            |> Parser.map (\_ -> Done (List.reverse revCommands))
+        ]
+
+
+commandParser : Parser TerminalCommand
 commandParser =
     Parser.succeed Tuple.pair
         |= wordParser
         |. spaces
         |= loop [] argHelp
-        |. spaces
-        |. end
 
 
 wordParser : Parser String
@@ -130,7 +154,10 @@ wordParser =
             |> Parser.andThen
                 (\str ->
                     if str == "" then
-                        Parser.problem "Empty string is invalid"
+                        Parser.problem "Empty string"
+
+                    else if String.startsWith "&" str then
+                        Parser.problem ("Forbidden character: " ++ str)
 
                     else
                         Parser.succeed str
@@ -141,10 +168,11 @@ wordParser =
 argHelp : List String -> Parser (Step (List String) (List String))
 argHelp revArgs =
     oneOf
-        [ succeed (\arg -> Loop (arg :: revArgs))
-            |. spaces
-            |= wordParser
-            |. spaces
+        [ backtrackable <|
+            succeed (\arg -> Loop (arg :: revArgs))
+                |. spaces
+                |= wordParser
+                |. spaces
         , succeed ()
             |> Parser.map (\_ -> Done (List.reverse revArgs))
         ]
@@ -333,7 +361,7 @@ keyDown model key =
             , Screen.batch
                 [ Screen.lineBreak
                 , parsedCommand
-                    |> Result.map (evalCommand model)
+                    |> Result.map (List.map (evalCommand model) >> Screen.batch)
                     |> Result.withDefault (Screen.printLn (command ++ " not found"))
                 , printPrompt model.prompt True
                 ]
@@ -346,9 +374,14 @@ keyDown model key =
             ( model, Screen.noCommand, Cmd.none )
 
 
-pushCommandUrl : Nav.Key -> ( String, List String ) -> Cmd msg
-pushCommandUrl navKey command =
-    Nav.pushUrl navKey (buildCommandUrl command)
+pushCommandUrl : Nav.Key -> List ( String, List String ) -> Cmd msg
+pushCommandUrl navKey commands =
+    case List.head commands of
+        Just command ->
+            Nav.pushUrl navKey (buildCommandUrl command)
+
+        Nothing ->
+            Cmd.none
 
 
 buildCommandUrl : ( String, List String ) -> String

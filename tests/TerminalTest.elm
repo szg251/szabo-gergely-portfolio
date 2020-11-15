@@ -15,19 +15,18 @@ for n fn x =
 suite : Test
 suite =
     describe "Terminal"
-        [ test "parse command"
+        [ test "parse single command"
             (\_ ->
                 Expect.equal
                     (Terminal.parseCommand "echo \"Hello World\" and good night")
-                    (Ok ( "echo", [ "Hello World", "and", "good", "night" ] ))
+                    (Ok [ ( "echo", [ "Hello World", "and", "good", "night" ] ) ])
             )
-
-        -- , test "parse &&"
-        --     (\_ ->
-        --         Expect.equal
-        --             (Terminal.parseCommand "echo Hello World && echo good night")
-        --             (Ok ( "echo", [ "Hello World", "and", "good", "night" ] ))
-        --     )
+        , test "parse &&"
+            (\_ ->
+                Expect.equal
+                    (Terminal.parseCommand "echo Hello World && echo Good night")
+                    (Ok [ ( "echo", [ "Hello", "World" ] ), ( "echo", [ "Good", "night" ] ) ])
+            )
         , test "URL builder and parser are isomorphic for simple commands"
             (\_ ->
                 let
