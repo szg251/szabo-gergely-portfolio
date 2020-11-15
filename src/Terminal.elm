@@ -36,6 +36,7 @@ import Url.Parser.Query
 type Msg
     = KeyDown Key
     | ScreenWidthChanged Int
+    | UrlChanged Url.Url
 
 
 type Key
@@ -63,7 +64,7 @@ type alias Model =
 
 init :
     { commands : List ( String, Command )
-    , initCommand : Maybe ( String, List String )
+    , initCommand : Maybe (List TerminalCommand)
     , navKey : Nav.Key
     , screenWidth : Int
     }
@@ -86,9 +87,9 @@ init { commands, initCommand, navKey, screenWidth } =
         Nothing ->
             printPrompt model.prompt True
 
-        Just firstCommand ->
+        Just command ->
             Screen.batch
-                [ evalCommand model firstCommand
+                [ List.map (evalCommand model) command |> Screen.batch
                 , printPrompt model.prompt True
                 ]
     )
@@ -237,6 +238,51 @@ update msg model =
         ScreenWidthChanged screenWidth ->
             ( { model | screenWidth = screenWidth }, Screen.noCommand, Cmd.none )
 
+        UrlChanged url ->
+            case parseCommandUrl url of
+                Nothing ->
+                    ( model
+                    , Screen.noCommand
+                    , Cmd.none
+                    )
+
+                Just command ->
+                    let
+                        parsedCommand =
+                            parseCommand command
+
+                        inputCommand =
+                            parseCommand (List.foldl String.cons "" model.inputBuffer)
+                    in
+                    ( { model
+                        | inputBuffer = []
+                        , promptCursor = 0
+                        , history = command :: model.history
+                        , historyIndex = Nothing
+                      }
+                    , Screen.batch
+                        ([]
+                            ++ (if List.isEmpty model.inputBuffer then
+                                    [ Screen.printLn command ]
+
+                                else if parsedCommand == inputCommand then
+                                    [ Screen.lineBreak ]
+
+                                else
+                                    [ printPrompt model.prompt True
+                                    , Screen.printLn command
+                                    ]
+                               )
+                            ++ [ parsedCommand
+                                    |> Result.map (List.map (evalCommand model) >> Screen.batch)
+                                    |> Result.withDefault
+                                        (Screen.printLn ("command not found: " ++ command))
+                               , printPrompt model.prompt True
+                               ]
+                        )
+                    , Cmd.none
+                    )
+
 
 keyDown : Model -> Key -> ( Model, ScreenCommand, Cmd Msg )
 keyDown model key =
@@ -360,19 +406,8 @@ keyDown model key =
                 parsedCommand =
                     parseCommand command
             in
-            ( { model
-                | inputBuffer = []
-                , promptCursor = 0
-                , history = command :: model.history
-                , historyIndex = Nothing
-              }
-            , Screen.batch
-                [ Screen.lineBreak
-                , parsedCommand
-                    |> Result.map (List.map (evalCommand model) >> Screen.batch)
-                    |> Result.withDefault (Screen.printLn (command ++ " not found"))
-                , printPrompt model.prompt True
-                ]
+            ( model
+            , Screen.noCommand
             , parsedCommand
                 |> Result.map (pushCommandUrl model.navKey)
                 |> Result.withDefault Cmd.none
@@ -382,47 +417,33 @@ keyDown model key =
             ( model, Screen.noCommand, Cmd.none )
 
 
-pushCommandUrl : Nav.Key -> List ( String, List String ) -> Cmd msg
+pushCommandUrl : Nav.Key -> List TerminalCommand -> Cmd msg
 pushCommandUrl navKey commands =
-    case List.head commands of
-        Just command ->
-            Nav.pushUrl navKey (buildCommandUrl command)
-
-        Nothing ->
-            Cmd.none
+    Nav.pushUrl navKey (buildCommandUrl commands)
 
 
-buildCommandUrl : ( String, List String ) -> String
-buildCommandUrl ( commandName, args ) =
-    Url.Builder.absolute [ commandName ]
-        (List.indexedMap
-            (\index arg ->
-                Url.Builder.string (String.fromInt index) arg
+buildCommandUrl : List TerminalCommand -> String
+buildCommandUrl commands =
+    List.map
+        (\( commandName, args ) ->
+            (commandName
+                :: List.map
+                    (\arg ->
+                        if String.contains " " arg then
+                            "\"" ++ arg ++ "\""
+
+                        else
+                            arg
+                    )
+                    args
             )
-            args
+                |> String.join " "
         )
+        commands
+        |> String.join " && "
 
 
-parseCommandUrl : Url.Url -> Maybe ( String, List String )
-parseCommandUrl url =
-    let
-        toCommandTuple commandName arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 =
-            ( commandName
-            , [ arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 ] |> MaybeE.values
-            )
-
-        urlParser =
-            Url.Parser.string
-                <?> Url.Parser.Query.string "0"
-                <?> Url.Parser.Query.string "1"
-                <?> Url.Parser.Query.string "2"
-                <?> Url.Parser.Query.string "3"
-                <?> Url.Parser.Query.string "4"
-                <?> Url.Parser.Query.string "5"
-                <?> Url.Parser.Query.string "6"
-                <?> Url.Parser.Query.string "7"
-                <?> Url.Parser.Query.string "8"
-                <?> Url.Parser.Query.string "9"
-                |> Url.Parser.map toCommandTuple
-    in
-    Url.Parser.parse urlParser url
+parseCommandUrl : Url.Url -> Maybe String
+parseCommandUrl =
+    Url.Parser.parse Url.Parser.string
+        >> Maybe.andThen Url.percentDecode

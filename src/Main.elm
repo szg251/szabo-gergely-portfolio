@@ -11,7 +11,6 @@ import Html.Styled
 import Http
 import Json.Decode as Decode exposing (decodeValue)
 import ProfileImage
-import Route
 import Screen exposing (Block(..), ScreenCommand(..))
 import Script
 import Terminal
@@ -51,7 +50,8 @@ init flags url key =
     let
         initCommand =
             Terminal.parseCommandUrl url
-                |> Maybe.withDefault ( "home", [] )
+                |> Maybe.andThen (Terminal.parseCommand >> Result.toMaybe)
+                |> Maybe.withDefault [ ( "home", [] ) ]
 
         ( terminalModel, screenCmd ) =
             Terminal.init
@@ -116,7 +116,9 @@ update msg model =
                     ( model, Nav.load href )
 
         UrlChanged url ->
-            loadPage { model | nextUrl = url }
+            updateTerminal
+                (Terminal.UrlChanged url)
+                ( { model | nextUrl = url }, Cmd.none )
 
         TerminalMsg terminalMsg ->
             updateTerminal terminalMsg ( model, Cmd.none )
@@ -152,20 +154,6 @@ updateTerminal terminalMsg ( model, prevCmd ) =
             , Cmd.map TerminalMsg cmdT
             ]
         )
-
-
-loadPage : Model -> ( Model, Cmd Msg )
-loadPage model =
-    let
-        nextRoute =
-            Route.parse model.nextUrl
-    in
-    case nextRoute of
-        Route.Home ->
-            ( { model | page = Home }, Cmd.none )
-
-        Route.Error status ->
-            ( { model | page = Error }, Cmd.none )
 
 
 view : Model -> Browser.Document Msg
