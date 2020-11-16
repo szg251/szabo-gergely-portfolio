@@ -60,7 +60,11 @@ init flags url key =
                     , ( "figlet", Figlet.run )
                     , ( "clear", Command.clear )
                     , ( "menu", Command.menu )
+                    , ( "link", Command.link )
                     , ( "home", Script.home )
+                    , ( "bio", Script.bio )
+                    , ( "projects", Script.projects )
+                    , ( "music", Script.music )
                     ]
                 , initCommand = Just initCommand
                 , navKey = key

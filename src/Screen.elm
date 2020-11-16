@@ -672,9 +672,9 @@ printColoredLn color string =
     Batch [ Print (Colored ( color, string )), LineBreak ]
 
 
-printLinkLn : String -> String -> ScreenCommand
-printLinkLn href string =
-    Batch [ Print (Link ( href, string )), LineBreak ]
+printLinkLn : { url : String, label : String } -> ScreenCommand
+printLinkLn { url, label } =
+    Batch [ Print (Link ( url, label )), LineBreak ]
 
 
 lineBreak : ScreenCommand

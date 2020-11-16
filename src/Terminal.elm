@@ -441,6 +441,8 @@ buildCommandUrl commands =
         )
         commands
         |> String.join " && "
+        |> String.replace "\\" "%5C"
+        |> (\command -> Url.Builder.absolute [ command ] [])
 
 
 parseCommandUrl : Url.Url -> Maybe String

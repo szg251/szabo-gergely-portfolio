@@ -19,7 +19,10 @@ type Environment
 
 echo : Command
 echo (Environment { args }) _ =
-    Screen.printLn (String.join " " args)
+    String.join " " args
+        |> String.split "\\n"
+        |> List.map Screen.printLn
+        |> Screen.batch
 
 
 clear : Command
@@ -50,7 +53,7 @@ menu (Environment { args, screenWidth }) _ =
                             { opts | spacing = spacing }
                 )
                 defaultOptions
-                (readOptions args)
+                (readMenuOptions args)
 
         fullLength =
             (options.padding * 2)
@@ -76,9 +79,9 @@ menu (Environment { args, screenWidth }) _ =
     if fullLength > screenWidth then
         Screen.batch
             ((List.map2
-                (\link length ->
+                (\printLink length ->
                     [ Screen.print (String.repeat (screenWidth - length // 2) " ")
-                    , link
+                    , printLink
                     ]
                 )
                 links
@@ -106,17 +109,18 @@ menu (Environment { args, screenWidth }) _ =
                    , Screen.print (String.repeat ((screenWidth - fullLength) // 2 + options.padding) " ")
                    ]
                 ++ List.intersperse (Screen.print (String.repeat options.spacing " ")) underlines
+                ++ [ Screen.lineBreak, Screen.lineBreak ]
             )
 
 
-type Option
+type MenuOption
     = Urls (List String)
     | Padding Int
     | Spacing Int
 
 
-readOptions : List String -> List Option
-readOptions args =
+readMenuOptions : List String -> List MenuOption
+readMenuOptions args =
     case args of
         fst :: snd :: rest ->
             if String.startsWith "-" fst then
@@ -124,24 +128,81 @@ readOptions args =
                     "-p" ->
                         case String.toInt snd of
                             Just int ->
-                                Padding int :: readOptions rest
+                                Padding int :: readMenuOptions rest
 
                             Nothing ->
-                                readOptions rest
+                                readMenuOptions rest
 
                     "-s" ->
                         case String.toInt snd of
                             Just int ->
-                                Spacing int :: readOptions rest
+                                Spacing int :: readMenuOptions rest
 
                             Nothing ->
-                                readOptions rest
+                                readMenuOptions rest
 
                     _ ->
-                        readOptions (snd :: rest)
+                        readMenuOptions (snd :: rest)
 
             else
                 [ Urls args ]
 
         _ ->
             [ Urls args ]
+
+
+type LinkOption
+    = Url String
+    | Label String
+
+
+readLinkOptions : List String -> List LinkOption
+readLinkOptions args =
+    case args of
+        fst :: snd :: rest ->
+            if String.startsWith "-" fst then
+                case fst of
+                    "-u" ->
+                        Url fst :: readLinkOptions rest
+
+                    _ ->
+                        readLinkOptions (snd :: rest)
+
+            else
+                [ Label (String.join " " args) ]
+
+        _ ->
+            [ Label (String.join " " args) ]
+
+
+link : Command
+link (Environment { args, screenWidth }) _ =
+    let
+        defaultOptions =
+            { url = Nothing
+            , label = ""
+            }
+
+        options =
+            List.foldl
+                (\opt opts ->
+                    case opt of
+                        Url url ->
+                            { opts | url = Just url }
+
+                        Label label ->
+                            { opts | label = label }
+                )
+                defaultOptions
+                (readLinkOptions args)
+    in
+    Screen.printLinkLn
+        { url =
+            case options.url of
+                Just url ->
+                    url
+
+                Nothing ->
+                    options.label
+        , label = options.label
+        }
