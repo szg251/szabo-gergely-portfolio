@@ -12,13 +12,17 @@ for n fn x =
 
 suite : Test
 suite =
+    let
+        testScreen =
+            Screen.init { command = Screen.noCommand, screenHeight = 40, screenWidth = 80 }
+                |> Tuple.first
+    in
     describe "Screen"
         [ test "displays 1 character/animation frame"
             (\_ ->
                 let
                     screen =
-                        Screen.init (print "0123456789")
-                            |> Tuple.first
+                        { testScreen | command = print "0123456789" }
                             |> for 5 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
@@ -31,13 +35,13 @@ suite =
             (\_ ->
                 let
                     screen =
-                        Screen.init
-                            (batch
-                                [ printLn "0123"
-                                , print "4567"
-                                ]
-                            )
-                            |> Tuple.first
+                        { testScreen
+                            | command =
+                                batch
+                                    [ printLn "0123"
+                                    , print "4567"
+                                    ]
+                        }
                             |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
@@ -51,14 +55,14 @@ suite =
             (\_ ->
                 let
                     screen =
-                        Screen.init
-                            (batch
-                                [ print "4567"
-                                , moveCursor (always ( 0, 0 ))
-                                , printLink { url = "https://example.com", label = "0123" }
-                                ]
-                            )
-                            |> Tuple.first
+                        { testScreen
+                            | command =
+                                batch
+                                    [ print "4567"
+                                    , moveCursor (always ( 0, 0 ))
+                                    , printLink { url = "https://example.com", label = "0123" }
+                                    ]
+                        }
                             |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
@@ -74,14 +78,14 @@ suite =
             (\_ ->
                 let
                     screen =
-                        Screen.init
-                            (batch
-                                [ print "4567"
-                                , moveCursor (always ( 0, 0 ))
-                                , print "0123"
-                                ]
-                            )
-                            |> Tuple.first
+                        { testScreen
+                            | command =
+                                batch
+                                    [ print "4567"
+                                    , moveCursor (always ( 0, 0 ))
+                                    , print "0123"
+                                    ]
+                        }
                             |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
@@ -93,14 +97,14 @@ suite =
             (\_ ->
                 let
                     screen =
-                        Screen.init
-                            (batch
-                                [ print "4567"
-                                , moveCursor (always ( 0, 2 ))
-                                , printLink { url = "https://example.com", label = "0123" }
-                                ]
-                            )
-                            |> Tuple.first
+                        { testScreen
+                            | command =
+                                batch
+                                    [ print "4567"
+                                    , moveCursor (always ( 0, 2 ))
+                                    , printLink { url = "https://example.com", label = "0123" }
+                                    ]
+                        }
                             |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
@@ -117,14 +121,14 @@ suite =
             (\_ ->
                 let
                     screen =
-                        Screen.init
-                            (batch
-                                [ print "4567"
-                                , moveCursor (always ( 0, 6 ))
-                                , print "0123"
-                                ]
-                            )
-                            |> Tuple.first
+                        { testScreen
+                            | command =
+                                batch
+                                    [ print "4567"
+                                    , moveCursor (always ( 0, 6 ))
+                                    , print "0123"
+                                    ]
+                        }
                             |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
@@ -137,14 +141,14 @@ suite =
             (\_ ->
                 let
                     screen =
-                        Screen.init
-                            (batch
-                                [ print "4567"
-                                , moveCursor (always ( 2, 2 ))
-                                , print "0123"
-                                ]
-                            )
-                            |> Tuple.first
+                        { testScreen
+                            | command =
+                                batch
+                                    [ print "4567"
+                                    , moveCursor (always ( 2, 2 ))
+                                    , print "0123"
+                                    ]
+                        }
                             |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
@@ -158,8 +162,7 @@ suite =
         , test "clear screen"
             (let
                 screen =
-                    Screen.init (batch [ print "01234", clearScreen ])
-                        |> Tuple.first
+                    { testScreen | command = batch [ print "01234", clearScreen ] }
                         |> for 6 (Screen.update Screen.EvalNextCommand >> Tuple.first)
              in
              Expect.all
@@ -171,14 +174,14 @@ suite =
             (\_ ->
                 let
                     screen =
-                        Screen.init
-                            (batch
-                                [ print "01234"
-                                , moveCursor (always ( 0, 2 ))
-                                , delete
-                                ]
-                            )
-                            |> Tuple.first
+                        { testScreen
+                            | command =
+                                batch
+                                    [ print "01234"
+                                    , moveCursor (always ( 0, 2 ))
+                                    , delete
+                                    ]
+                        }
                             |> for 8 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     expectedOutput =
@@ -190,8 +193,7 @@ suite =
             (\_ ->
                 let
                     screen =
-                        Screen.init (batch [ printLn "0123", print "4567" ])
-                            |> Tuple.first
+                        { testScreen | command = batch [ printLn "0123", print "4567" ] }
                             |> for 10 (Screen.update Screen.EvalNextCommand >> Tuple.first)
 
                     remergedOutput =

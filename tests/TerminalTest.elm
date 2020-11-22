@@ -31,11 +31,13 @@ suite =
             (\_ ->
                 let
                     originalCommand =
-                        ( "echo", [ "Hello World", "and", "good", "night" ] )
+                        "echo \"Hello World\" and good night"
                 in
                 Expect.equal
-                    (("http://localhost" ++ Terminal.buildCommandUrl originalCommand)
-                        |> Url.fromString
+                    (Terminal.parseCommand originalCommand
+                        |> Result.toMaybe
+                        |> Maybe.map (\parsed -> "http://localhost" ++ Terminal.buildCommandUrl parsed)
+                        |> Maybe.andThen Url.fromString
                         |> Maybe.andThen Terminal.parseCommandUrl
                     )
                     (Just originalCommand)
