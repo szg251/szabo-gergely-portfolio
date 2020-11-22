@@ -1,5 +1,6 @@
 module Screen exposing (..)
 
+import Browser.Dom
 import Css exposing (..)
 import Css.Global exposing (body, global)
 import Html.Styled exposing (..)
@@ -289,8 +290,7 @@ evalCommand model =
                 , cursorPosition =
                     ( Tuple.first model.cursorPosition + 1, 0 )
               }
-                |> trimHeight
-            , Cmd.none
+            , scrollToBottom
             )
 
         Print block ->
@@ -307,7 +307,6 @@ evalCommand model =
                             , Tuple.second model.cursorPosition + 1
                             )
                       }
-                        |> trimHeight
                     , Cmd.none
                     )
 
@@ -349,7 +348,7 @@ evalCommand model =
                 | command = NoCommand
                 , cursorPosition = updatedPosition model.cursorPosition
               }
-            , Cmd.none
+            , scrollToBottom
             )
 
         Batch commands ->
@@ -494,16 +493,15 @@ mergeVisibleOutput { upperLns, currentLnLeft, currentLnRight, bottomLns } =
     bottomLns ++ Line updatedLn :: upperLns
 
 
-trimHeight : Model -> Model
-trimHeight model =
-    let
-        trimmedLns =
-            max (List.length model.visibleOutput - model.screenHeight) 0
-    in
-    { model
-        | visibleOutput = List.take model.screenHeight model.visibleOutput
-        , cursorPosition = Tuple.mapFirst (\lns -> lns - trimmedLns) model.cursorPosition
-    }
+scrollToBottom : Cmd Msg
+scrollToBottom =
+    Task.perform (\_ -> NoOp)
+        (Browser.Dom.getViewport
+            |> Task.andThen
+                (\{ scene, viewport } ->
+                    Browser.Dom.setViewport 1000 1000
+                )
+        )
 
 
 deleteChar : CursorPosition -> VisibleOutput -> VisibleOutput
