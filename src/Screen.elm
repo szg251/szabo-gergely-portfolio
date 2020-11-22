@@ -290,6 +290,7 @@ evalCommand model =
                 , cursorPosition =
                     ( Tuple.first model.cursorPosition + 1, 0 )
               }
+                |> trimHeight
             , scrollToBottom
             )
 
@@ -348,6 +349,7 @@ evalCommand model =
                 | command = NoCommand
                 , cursorPosition = updatedPosition model.cursorPosition
               }
+                |> trimHeight
             , scrollToBottom
             )
 
@@ -499,9 +501,24 @@ scrollToBottom =
         (Browser.Dom.getViewport
             |> Task.andThen
                 (\{ scene, viewport } ->
-                    Browser.Dom.setViewport 1000 1000
+                    Browser.Dom.setViewport 0 (scene.height - viewport.height)
                 )
         )
+
+
+trimHeight : Model -> Model
+trimHeight model =
+    let
+        bufferLength =
+            model.screenHeight * 3
+
+        trimmedLns =
+            max (List.length model.visibleOutput - bufferLength) 0
+    in
+    { model
+        | visibleOutput = List.take bufferLength model.visibleOutput
+        , cursorPosition = Tuple.mapFirst (\lns -> lns - trimmedLns) model.cursorPosition
+    }
 
 
 deleteChar : CursorPosition -> VisibleOutput -> VisibleOutput
@@ -578,7 +595,7 @@ viewLn model ln (Line cols) =
         ( _, elements ) =
             ListE.mapAccuml (viewBlock model ln) 0 cols
     in
-    div [] elements
+    span [ css [ displayFlex, height (px 20) ] ] elements
 
 
 viewBlock : Model -> Int -> Int -> Block (List Char) -> ( Int, Html msg )
