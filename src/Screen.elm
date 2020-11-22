@@ -379,12 +379,12 @@ evalCommand model =
 
 pxToWidth : Int -> Int
 pxToWidth pixels =
-    ((pixels - 40) // 10) - 10
+    (pixels - 40) // 10
 
 
 pxToHeight : Int -> Int
 pxToHeight pixels =
-    ((pixels - 40) // 18) - 10
+    (pixels - 40) // 20
 
 
 splitVisibleOutputAt :
@@ -582,6 +582,7 @@ view model =
         [ body
             [ backgroundColor (rgb 0 0 0)
             , color (rgb 178 178 178)
+            , margin zero
             , padding2 (px 20) (px 20)
             , fontFamilies [ "unscii-16", "monospace" ]
             , fontSize (px 20)
