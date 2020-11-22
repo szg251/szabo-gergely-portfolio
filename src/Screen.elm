@@ -564,6 +564,9 @@ view model =
             , color (rgb 178 178 178)
             , padding2 (px 20) (px 20)
             , fontFamilies [ "unscii-16", "monospace" ]
+            , fontSize (px 20)
+            , lineHeight (px 20)
+            , whiteSpace Css.pre
             ]
         ]
         :: List.indexedMap
@@ -577,7 +580,7 @@ viewLn model ln (Line cols) =
         ( _, elements ) =
             ListE.mapAccuml (viewBlock model ln) 0 cols
     in
-    span [ css [ displayFlex ] ] elements
+    div [] elements
 
 
 viewBlock : Model -> Int -> Int -> Block (List Char) -> ( Int, Html msg )
@@ -609,8 +612,8 @@ viewBlock model ln prevCol block =
             ( nextCols
             , a
                 [ css
-                    [ display inlineBlock
-                    , color inherit
+                    [ color inherit
+                    , textDecoration none
                     , hover
                         [ color (rgb 0 0 255)
                         , backgroundColor (rgb 255 178 178)
@@ -628,22 +631,19 @@ viewBlock model ln prevCol block =
 viewCol : Model -> Int -> Int -> Char -> ( Int, Html msg )
 viewCol { cursorPosition, cursorVisible } ln prevCol char =
     ( prevCol + 1
-    , span
-        [ css
-            ([ display inlineBlock
-             , width (px 10)
-             , height (px 18)
-             , fontSize (px 20)
-             ]
-                ++ (if cursorPosition == ( ln, prevCol ) && cursorVisible then
-                        [ backgroundColor (rgb 0 255 255) ]
+    , if cursorPosition == ( ln, prevCol ) then
+        span
+            (if cursorVisible then
+                [ css [ backgroundColor (rgb 0 255 255) ] ]
 
-                    else
-                        []
-                   )
+             else
+                []
             )
-        ]
-        [ text (String.fromChar char) ]
+            [ text (String.fromChar char)
+            ]
+
+      else
+        text (String.fromChar char)
     )
 
 
