@@ -48,6 +48,12 @@ type alias Model =
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     let
+        screenWidth =
+            Screen.pxToWidth flags.windowSize.width
+
+        screenHeight =
+            Screen.pxToHeight flags.windowSize.height
+
         initCommand =
             Terminal.parseCommandUrl url
                 |> Maybe.andThen (Terminal.parseCommand >> Result.toMaybe)
@@ -68,13 +74,14 @@ init flags url key =
                     ]
                 , initCommand = Just initCommand
                 , navKey = key
-                , screenWidth = Screen.pxToWidth flags.windowSize.width
+                , screenWidth = screenWidth
                 }
 
         ( screenModel, cmd ) =
             Screen.init
                 { command = screenCmd
-                , screenHeight = Screen.pxToHeight flags.windowSize.height
+                , screenWidth = screenWidth
+                , screenHeight = screenHeight
                 }
     in
     ( { key = key
@@ -110,9 +117,19 @@ update msg model =
             ( model, Cmd.none )
 
         WindowSizeChanged windowSize ->
+            let
+                screenWidth =
+                    Screen.pxToWidth windowSize.width
+
+                screenHeight =
+                    Screen.pxToHeight windowSize.height
+            in
             ( { model | device = Device.fromWindowSize windowSize }, Cmd.none )
-                |> updateTerminal (Terminal.ScreenWidthChanged (Screen.pxToWidth windowSize.width))
-                |> updateScreen (Screen.ScreenSizeChanged (Screen.pxToHeight windowSize.height))
+                |> updateTerminal (Terminal.ScreenWidthChanged screenWidth)
+                |> updateScreen
+                    (Screen.ScreenSizeChanged
+                        { screenWidth = screenWidth, screenHeight = screenHeight }
+                    )
 
         UrlRequested urlRequest ->
             case urlRequest of

@@ -16,7 +16,7 @@ type Msg
     | BlinkCursor
     | Flush
     | AppendCommand ScreenCommand
-    | ScreenSizeChanged Int
+    | ScreenSizeChanged { screenWidth : Int, screenHeight : Int }
 
 
 type alias Model =
@@ -24,16 +24,18 @@ type alias Model =
     , command : ScreenCommand
     , cursorVisible : Bool
     , cursorPosition : CursorPosition
+    , screenWidth : Int
     , screenHeight : Int
     }
 
 
-init : { screenHeight : Int, command : ScreenCommand } -> ( Model, Cmd Msg )
-init { screenHeight, command } =
+init : { screenWidth : Int, screenHeight : Int, command : ScreenCommand } -> ( Model, Cmd Msg )
+init { screenWidth, screenHeight, command } =
     ( { command = command
       , visibleOutput = [ Line [] ]
       , cursorVisible = True
       , cursorPosition = ( 0, 0 )
+      , screenWidth = screenWidth
       , screenHeight = screenHeight
       }
     , Task.perform (always EvalNextCommand) (Process.sleep 0)
@@ -220,8 +222,8 @@ update msg model =
         Flush ->
             flush ( model, Cmd.none )
 
-        ScreenSizeChanged screenHeight ->
-            ( { model | screenHeight = screenHeight }
+        ScreenSizeChanged { screenWidth, screenHeight } ->
+            ( { model | screenWidth = screenWidth, screenHeight = screenHeight }
             , Cmd.none
             )
 
@@ -404,56 +406,10 @@ splitVisibleOutputAt cursorPosition visibleOutput =
                 |> Tuple.mapSecond ((++) (List.repeat -reverseLnIndex (Line [])))
     in
     case upperLns of
-        (Line lastLn) :: restUpperLns ->
+        lastLn :: restUpperLns ->
             let
-                ( length, blocks ) =
-                    ListE.mapAccuml
-                        (\colMin nextBlock ->
-                            let
-                                colMax =
-                                    colMin + blockLength nextBlock
-                            in
-                            ( colMax, ( colMin, colMax, nextBlock ) )
-                        )
-                        0
-                        lastLn
-
-                reverseColIndex =
-                    length - Tuple.second cursorPosition
-
-                ( rightBlocksWithCol, leftBlocksWithCol ) =
-                    blocks
-                        |> ListE.splitWhen
-                            (\( colMin, colMax, _ ) ->
-                                colMin <= reverseColIndex && reverseColIndex <= colMax
-                            )
-                        |> Maybe.withDefault
-                            ( []
-                            , ( length
-                              , length + -reverseColIndex
-                              , NormalBlock (List.repeat -reverseColIndex ' ')
-                              )
-                                :: blocks
-                            )
-
-                rightBlocks =
-                    List.map (\( _, _, block ) -> block) rightBlocksWithCol
-
-                ( currentLnRight, currentLnLeft ) =
-                    case leftBlocksWithCol of
-                        ( colMin, _, lastBlock ) :: firstBlocksTuples ->
-                            let
-                                ( charsRight, charsLeft ) =
-                                    splitBlockAt (reverseColIndex - colMin) lastBlock
-                            in
-                            ( charsRight :: rightBlocks
-                            , charsLeft :: List.map (\( _, _, block ) -> block) firstBlocksTuples
-                            )
-
-                        [] ->
-                            ( rightBlocks
-                            , []
-                            )
+                ( currentLnLeft, currentLnRight ) =
+                    splitLineAt (Tuple.second cursorPosition) lastLn
             in
             { upperLns = restUpperLns
             , currentLnLeft = currentLnLeft
@@ -467,6 +423,56 @@ splitVisibleOutputAt cursorPosition visibleOutput =
             , currentLnRight = []
             , bottomLns = bottomLns
             }
+
+
+splitLineAt : Int -> Line -> ( List (Block (List Char)), List (Block (List Char)) )
+splitLineAt index (Line line) =
+    let
+        ( length, blocks ) =
+            ListE.mapAccuml
+                (\colMin nextBlock ->
+                    let
+                        colMax =
+                            colMin + blockLength nextBlock
+                    in
+                    ( colMax, ( colMin, colMax, nextBlock ) )
+                )
+                0
+                line
+
+        reverseColIndex =
+            length - index
+
+        ( rightBlocksWithCol, leftBlocksWithCol ) =
+            blocks
+                |> ListE.splitWhen
+                    (\( colMin, colMax, _ ) ->
+                        colMin <= reverseColIndex && reverseColIndex <= colMax
+                    )
+                |> Maybe.withDefault
+                    ( []
+                    , ( length
+                      , length + -reverseColIndex
+                      , NormalBlock (List.repeat -reverseColIndex ' ')
+                      )
+                        :: blocks
+                    )
+
+        rightBlocks =
+            List.map (\( _, _, block ) -> block) rightBlocksWithCol
+    in
+    case leftBlocksWithCol of
+        ( colMin, _, lastBlock ) :: firstBlocksTuples ->
+            let
+                ( charsRight, charsLeft ) =
+                    splitBlockAt (reverseColIndex - colMin) lastBlock
+            in
+            ( charsLeft :: List.map (\( _, _, block ) -> block) firstBlocksTuples
+            , charsRight :: rightBlocks
+            )
+
+        [] ->
+            ( [], rightBlocks )
 
 
 mergeVisibleOutput :
@@ -571,7 +577,6 @@ view model =
     let
         lns =
             List.reverse model.visibleOutput
-                |> List.map (mapLine ((::) EmptyBlock >> List.map (mapBlock List.reverse) >> List.reverse))
     in
     global
         [ body
@@ -584,18 +589,38 @@ view model =
             , whiteSpace Css.pre
             ]
         ]
-        :: List.indexedMap
-            (viewLn model)
-            lns
+        :: List.concat
+            (List.indexedMap
+                (viewLn model)
+                lns
+            )
 
 
-viewLn : Model -> Int -> Line -> Html msg
-viewLn model ln (Line cols) =
+viewLn : Model -> Int -> Line -> List (Html msg)
+viewLn model ln (Line blocks) =
     let
-        ( _, elements ) =
-            ListE.mapAccuml (viewBlock model ln) 0 cols
+        splitLongLine line =
+            if List.foldl (blockLength >> (+)) 0 line <= model.screenWidth then
+                [ line ]
+
+            else
+                let
+                    ( fstLine, sndLine ) =
+                        splitLineAt model.screenWidth (Line line)
+                in
+                fstLine :: splitLongLine sndLine
     in
-    span [ css [ displayFlex, height (px 20) ] ] elements
+    splitLongLine blocks
+        |> List.indexedMap
+            (\index splitted ->
+                span [ css [ displayFlex, height (px 20) ] ]
+                    ((EmptyBlock :: splitted)
+                        |> List.map (mapBlock List.reverse)
+                        |> List.reverse
+                        |> ListE.mapAccuml (viewBlock model ln) (index * model.screenWidth)
+                        |> Tuple.second
+                    )
+            )
 
 
 viewBlock : Model -> Int -> Int -> Block (List Char) -> ( Int, Html msg )
@@ -652,7 +677,8 @@ viewCol { cursorPosition, cursorVisible } ln prevCol char =
                 [ css [ backgroundColor (rgb 0 255 255) ] ]
 
              else
-                []
+                [ css [ backgroundColor (rgb 0 255 255) ] ]
+             -- []
             )
             [ text (String.fromChar char)
             ]
