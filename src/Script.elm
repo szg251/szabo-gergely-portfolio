@@ -34,9 +34,17 @@ bio environment _ =
             """
             Work Experiences
             ----------------
-            2018.05. - present  Kakekomu
-            2018.01. - 2019.03. Yahoo Japan
-            2017.04. - 2017.12. Happiness Technology
+            2019.04. - present  Kakekomu (Tokyo, Japan)
+            $                   Full-Stack Engineer full time (React, Elm, TypeScript, Koa.js, Ruby on Rails, AWS)
+
+            2018.05. - 2019.03  Kakekomu (Tokyo, Japan)
+            $                   Front-End Engineer part time (React, Next.js)
+
+            2018.01. - 2019.03. Yahoo Japan (Tokyo, Japan)
+            $                   Front-End engineer (React, TypeScript)
+
+            2017.04. - 2017.12. Happiness Technology (Tokyo, Japan)
+            $                   System Engineer (Java, Oracle SQL)
             """
     in
     [ ( "figlet", [ "-f", "small", "Bio" ] )
@@ -73,5 +81,5 @@ evalCommand (Environment environment) ( commandName, args ) =
 toEchoArg : String -> String
 toEchoArg =
     String.split "\n"
-        >> List.map String.trim
+        >> List.map (String.trim >> String.replace "$" " ")
         >> String.join "\\n"

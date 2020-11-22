@@ -1,14 +1,11 @@
 module Screen exposing (..)
 
-import Browser.Dom
 import Css exposing (..)
-import Css.Global as Global exposing (body, global)
-import Html
+import Css.Global exposing (body, global)
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css, href, style)
+import Html.Styled.Attributes exposing (css, href)
 import List.Extra as ListE
 import Process
-import Svg.Attributes exposing (visibility)
 import Task
 
 
@@ -18,6 +15,7 @@ type Msg
     | BlinkCursor
     | Flush
     | AppendCommand ScreenCommand
+    | ScreenSizeChanged Int
 
 
 type alias Model =
@@ -25,7 +23,20 @@ type alias Model =
     , command : ScreenCommand
     , cursorVisible : Bool
     , cursorPosition : CursorPosition
+    , screenHeight : Int
     }
+
+
+init : { screenHeight : Int, command : ScreenCommand } -> ( Model, Cmd Msg )
+init { screenHeight, command } =
+    ( { command = command
+      , visibleOutput = [ Line [] ]
+      , cursorVisible = True
+      , cursorPosition = ( 0, 0 )
+      , screenHeight = screenHeight
+      }
+    , Task.perform (always EvalNextCommand) (Process.sleep 0)
+    )
 
 
 type ScreenCommand
@@ -109,10 +120,10 @@ isEmptyBlock block =
         NormalBlock xss ->
             List.isEmpty xss
 
-        Colored ( color, xss ) ->
+        Colored ( _, xss ) ->
             List.isEmpty xss
 
-        Link ( href, xss ) ->
+        Link ( _, xss ) ->
             List.isEmpty xss
 
         EmptyBlock ->
@@ -139,7 +150,7 @@ mergeBlocks blockA blockB =
             else
                 [ blockA, blockB ]
 
-        ( a, b ) ->
+        ( _, _ ) ->
             [ blockA, blockB ]
 
 
@@ -188,17 +199,6 @@ type alias CursorPosition =
     ( Int, Int )
 
 
-init : ScreenCommand -> ( Model, Cmd Msg )
-init command =
-    ( { command = command
-      , visibleOutput = [ Line [] ]
-      , cursorVisible = True
-      , cursorPosition = ( 0, 0 )
-      }
-    , Task.perform (always EvalNextCommand) (Process.sleep 0)
-    )
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -218,6 +218,11 @@ update msg model =
 
         Flush ->
             flush ( model, Cmd.none )
+
+        ScreenSizeChanged screenHeight ->
+            ( { model | screenHeight = screenHeight }
+            , Cmd.none
+            )
 
 
 flush : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
@@ -245,7 +250,7 @@ scheduleNextEval ( model, cmd ) =
         ( model
         , Cmd.batch
             [ cmd
-            , Task.perform (always EvalNextCommand) (Process.sleep 4)
+            , Task.perform (always EvalNextCommand) (Process.sleep 0)
             ]
         )
 
@@ -271,17 +276,6 @@ appendCommand command model =
             ( { model | command = Batch (prevCommand :: [ command ]) }, Cmd.none )
 
 
-scrollToBottom : Cmd Msg
-scrollToBottom =
-    Task.perform (\_ -> NoOp)
-        (Browser.Dom.getViewport
-            |> Task.andThen
-                (\{ scene, viewport } ->
-                    Browser.Dom.setViewport 1000 1000
-                )
-        )
-
-
 evalCommand : Model -> ( Model, Cmd Msg )
 evalCommand model =
     case model.command of
@@ -295,7 +289,8 @@ evalCommand model =
                 , cursorPosition =
                     ( Tuple.first model.cursorPosition + 1, 0 )
               }
-            , scrollToBottom
+                |> trimHeight
+            , Cmd.none
             )
 
         Print block ->
@@ -312,6 +307,7 @@ evalCommand model =
                             , Tuple.second model.cursorPosition + 1
                             )
                       }
+                        |> trimHeight
                     , Cmd.none
                     )
 
@@ -353,7 +349,7 @@ evalCommand model =
                 | command = NoCommand
                 , cursorPosition = updatedPosition model.cursorPosition
               }
-            , scrollToBottom
+            , Cmd.none
             )
 
         Batch commands ->
@@ -378,22 +374,14 @@ evalCommand model =
                         ( { evaled | command = Batch (evaled.command :: restCommands) }, cmd )
 
 
-getLastPosition : VisibleOutput -> CursorPosition
-getLastPosition visibleOutput =
-    ( List.length visibleOutput - 1
-    , case List.head visibleOutput of
-        Just (Line blocks) ->
-            List.map blockLength blocks
-                |> List.foldl (+) 0
-
-        Nothing ->
-            0
-    )
-
-
 pxToWidth : Int -> Int
 pxToWidth pixels =
     ((pixels - 40) // 10) - 10
+
+
+pxToHeight : Int -> Int
+pxToHeight pixels =
+    ((pixels - 40) // 18) - 10
 
 
 splitVisibleOutputAt :
@@ -504,6 +492,18 @@ mergeVisibleOutput { upperLns, currentLnLeft, currentLnRight, bottomLns } =
                     []
     in
     bottomLns ++ Line updatedLn :: upperLns
+
+
+trimHeight : Model -> Model
+trimHeight model =
+    let
+        trimmedLns =
+            max (List.length model.visibleOutput - model.screenHeight) 0
+    in
+    { model
+        | visibleOutput = List.take model.screenHeight model.visibleOutput
+        , cursorPosition = Tuple.mapFirst (\lns -> lns - trimmedLns) model.cursorPosition
+    }
 
 
 deleteChar : CursorPosition -> VisibleOutput -> VisibleOutput

@@ -236,7 +236,13 @@ update msg model =
             keyDown model key
 
         ScreenWidthChanged screenWidth ->
-            ( { model | screenWidth = screenWidth }, Screen.noCommand, Cmd.none )
+            ( { model | screenWidth = screenWidth }
+            , Screen.batch
+                [ Screen.clearScreen
+                , printPrompt model.prompt False
+                ]
+            , Cmd.none
+            )
 
         UrlChanged url ->
             case parseCommandUrl url of

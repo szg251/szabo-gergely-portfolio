@@ -72,7 +72,10 @@ init flags url key =
                 }
 
         ( screenModel, cmd ) =
-            Screen.init screenCmd
+            Screen.init
+                { command = screenCmd
+                , screenHeight = Screen.pxToHeight flags.windowSize.height
+                }
     in
     ( { key = key
       , page = Initializing
@@ -107,9 +110,9 @@ update msg model =
             ( model, Cmd.none )
 
         WindowSizeChanged windowSize ->
-            updateTerminal
-                (Terminal.ScreenWidthChanged (Screen.pxToWidth windowSize.width))
-                ( { model | device = Device.fromWindowSize windowSize }, Cmd.none )
+            ( { model | device = Device.fromWindowSize windowSize }, Cmd.none )
+                |> updateTerminal (Terminal.ScreenWidthChanged (Screen.pxToWidth windowSize.width))
+                |> updateScreen (Screen.ScreenSizeChanged (Screen.pxToHeight windowSize.height))
 
         UrlRequested urlRequest ->
             case urlRequest of
