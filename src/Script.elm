@@ -7,7 +7,7 @@ import Terminal exposing (TerminalCommand)
 
 
 home : Command
-home environment _ =
+home ((Environment { screenWidth }) as environment) _ =
     let
         welcomeText =
             """
@@ -17,7 +17,13 @@ home environment _ =
 
             Github page: """
     in
-    [ ( "figlet", [ "-c", "-f", "slant", "Szabo", "Gergely" ] )
+    [ ( "figlet"
+      , if screenWidth > 40 then
+            [ "-c", "-f", "slant", "Szabo", "Gergely" ]
+
+        else
+            [ "-c", "-f", "small", "Szabo", "Gergely" ]
+      )
     , ( "echo", [] )
     , ( "menu", [ "home", "bio", "projects", "music" ] )
     , ( "echo", [ toEchoArg welcomeText ] )

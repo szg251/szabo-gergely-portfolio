@@ -138,15 +138,26 @@ readOptions args =
 toLines : Font -> Int -> Align -> String -> List String
 toLines font maxWidth align input =
     let
-        charCodes =
-            input
-                |> String.toList
-                |> List.map Char.toCode
-
         emptyLines =
             List.repeat font.params.height ""
+    in
+    String.words input
+        |> List.map (String.cons ' ' >> createWord font maxWidth)
+        |> List.foldr (joinLines font.params maxWidth) emptyLines
+        |> alignRows font.params align maxWidth
+        |> List.map (String.replace (String.fromChar font.params.hardblank) " ")
 
-        alignText length lines =
+
+alignRows : FontParams -> Align -> Int -> List String -> List String
+alignRows fontParams align maxWidth rows =
+    let
+        alignText lines =
+            let
+                length =
+                    List.map String.length lines
+                        |> List.maximum
+                        |> Maybe.withDefault 0
+            in
             case align of
                 Left ->
                     lines
@@ -159,44 +170,58 @@ toLines font maxWidth align input =
                         (\text -> String.trimRight (String.repeat ((maxWidth - length) // 2) " " ++ text))
                         lines
     in
-    charCodes
-        |> List.foldl
-            (\code ( lines, rows ) ->
-                let
-                    charLines =
-                        Dict.get code font.chars
-                            |> Maybe.map .lines
-                            |> Maybe.withDefault emptyLines
+    ListE.groupsOf fontParams.height rows
+        |> List.map alignText
+        |> List.concat
 
-                    joined =
-                        joinLines font.params lines charLines
 
-                    length =
-                        List.map String.length joined
-                            |> List.maximum
-                            |> Maybe.withDefault 0
-                in
-                if length > maxWidth then
-                    ( charLines, rows ++ [ alignText length lines ] )
-
-                else
-                    ( joined, rows )
+createWord : Font -> Int -> String -> List String
+createWord font maxWidth str =
+    let
+        emptyLines =
+            List.repeat font.params.height ""
+    in
+    String.toList str
+        |> List.map
+            (\ch ->
+                Dict.get (Char.toCode ch) font.chars
+                    |> Maybe.map .lines
+                    |> Maybe.withDefault emptyLines
             )
-            ( emptyLines, [] )
-        |> (\( lastRow, rows ) ->
-                let
-                    length =
-                        List.map String.length lastRow
-                            |> List.maximum
-                            |> Maybe.withDefault 0
-                in
-                List.concat (rows ++ [ alignText length lastRow ])
-           )
-        |> List.map (String.replace (String.fromChar font.params.hardblank) " ")
+        |> List.foldr (joinLines font.params maxWidth) emptyLines
 
 
-joinLines : FontParams -> List String -> List String -> List String
-joinLines fontParams inputL inputR =
+joinLines : FontParams -> Int -> List String -> List String -> List String
+joinLines fontParams maxWidth inputL inputR =
+    let
+        ( restOfL, lastOfL ) =
+            ListE.splitAt (List.length inputL - fontParams.height) inputL
+
+        ( firstOfR, restOfR ) =
+            ListE.splitAt fontParams.height inputR
+
+        smushed =
+            smushLines fontParams lastOfL firstOfR
+
+        length =
+            List.map String.length smushed
+                |> List.maximum
+                |> Maybe.withDefault 0
+    in
+    if length > maxWidth then
+        inputL ++ inputR
+
+    else
+        restOfL ++ smushed ++ restOfR
+
+
+
+-- inputL ++ inputR
+-- restOfR ++ smushed ++ restOfL
+
+
+smushLines : FontParams -> List String -> List String -> List String
+smushLines fontParams inputL inputR =
     let
         stringUnconsLast =
             String.reverse
@@ -277,7 +302,7 @@ joinLines fontParams inputL inputR =
     case combineBothLists smushedLns of
         Ok { leftLns, rightLns, spacesOnlyLns } ->
             if spacesOnlyLns then
-                joinLines fontParams leftLns rightLns
+                smushLines fontParams leftLns rightLns
 
             else
                 List.map2 (++) leftLns rightLns

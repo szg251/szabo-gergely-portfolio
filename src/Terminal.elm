@@ -237,10 +237,7 @@ update msg model =
 
         ScreenWidthChanged screenWidth ->
             ( { model | screenWidth = screenWidth }
-            , Screen.batch
-                [ Screen.clearScreen
-                , printPrompt model.prompt False
-                ]
+            , Screen.noCommand
             , Cmd.none
             )
 

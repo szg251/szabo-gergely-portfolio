@@ -614,7 +614,7 @@ viewLn model ln (Line blocks) =
     splitLongLine blocks
         |> List.indexedMap
             (\index splitted ->
-                span [ css [ displayFlex, height (px 20) ] ]
+                span [ css [ display block, height (px 20) ] ]
                     ((EmptyBlock :: splitted)
                         |> List.map (mapBlock List.reverse)
                         |> List.reverse
