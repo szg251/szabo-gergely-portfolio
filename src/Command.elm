@@ -78,27 +78,16 @@ menu (Environment { args, screenWidth }) _ =
     in
     if fullLength > screenWidth then
         Screen.batch
-            ((List.map2
-                (\printLink length ->
-                    [ Screen.print (String.repeat (screenWidth - length // 2) " ")
-                    , printLink
-                    ]
-                )
-                links
-                lengths
+            (links
+                |> List.map
+                    (\printLink ->
+                        [ Screen.print "-> "
+                        , printLink
+                        , Screen.lineBreak
+                        , Screen.lineBreak
+                        ]
+                    )
                 |> List.concat
-             )
-                ++ [ Screen.lineBreak ]
-                ++ (List.map2
-                        (\underline length ->
-                            [ Screen.print (String.repeat (screenWidth - length // 2) " ")
-                            , underline
-                            ]
-                        )
-                        underlines
-                        lengths
-                        |> List.concat
-                   )
             )
 
     else
