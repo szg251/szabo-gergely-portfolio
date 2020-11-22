@@ -17,18 +17,22 @@ home ((Environment { screenWidth }) as environment) _ =
 
             Github page: """
     in
-    [ ( "figlet"
-      , if screenWidth > 40 then
-            [ "-c", "-f", "slant", "Szabo", "Gergely" ]
+    (if screenWidth > 40 then
+        [ ( "figlet", [ "-c", "-f", "slant", "Szabo", "Gergely" ] ) ]
 
-        else
-            [ "-c", "-f", "small", "Szabo", "Gergely" ]
-      )
-    , ( "echo", [] )
-    , ( "menu", [ "home", "bio", "projects", "music" ] )
-    , ( "echo", [ toEchoArg welcomeText ] )
-    , ( "link", [ "https://github.com/gege251" ] )
-    ]
+     else if screenWidth > 30 then
+        [ ( "figlet", [ "-c", "-f", "small", "Szabo", "Gergely" ] ) ]
+
+     else
+        [ ( "echo", [ "Szabo Gergely" ] )
+        , ( "echo", [ "----- -------" ] )
+        ]
+    )
+        ++ [ ( "echo", [] )
+           , ( "menu", [ "home", "bio", "projects", "music" ] )
+           , ( "echo", [ toEchoArg welcomeText ] )
+           , ( "link", [ "https://github.com/gege251" ] )
+           ]
         |> List.map (evalCommand environment)
         |> Screen.batch
 
