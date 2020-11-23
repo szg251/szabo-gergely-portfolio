@@ -72,7 +72,10 @@ textPartsToScreenCommand textParts =
                 ( Nothing, [] )
                 textParts
     in
-    screenCommands |> List.reverse |> Screen.batch
+    screenCommands
+        |> List.reverse
+        |> (::) Screen.lineBreak
+        |> Screen.batch
 
 
 parseEchoString : String -> Result (List DeadEnd) (List TextPart)

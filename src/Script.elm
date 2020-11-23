@@ -38,24 +38,54 @@ home ((Environment { screenWidth }) as environment) _ =
 
 
 bio : Command
-bio environment _ =
+bio ((Environment { screenWidth }) as environment) _ =
     let
+        white =
+            "\\033[1;37m"
+
+        noColor =
+            "\\033[0m"
+
+        workExperiences =
+            [ ( "2019.04. - present "
+              , white ++ "Kakekomu (Tokyo, Japan)" ++ noColor
+              , "Full-Stack Engineer full time (React, Elm, TypeScript, Koa.js, Ruby on Rails, AWS)"
+              )
+            , ( "2018.05. - 2019.03."
+              , white ++ "Kakekomu (Tokyo, Japan)" ++ noColor
+              , "Front-End Engineer part time (React, Next.js)"
+              )
+            , ( "2018.01. - 2019.03."
+              , white ++ "Yahoo Japan (Tokyo, Japan)" ++ noColor
+              , "Front-End engineer (React, TypeScript)"
+              )
+            , ( "2017.04. - 2017.12."
+              , white ++ "Happiness Technology (Tokyo, Japan)" ++ noColor
+              , "System Engineer (Java, Oracle SQL"
+              )
+            ]
+
         workExperiencesText =
             """
             Work Experiences
             ----------------
-            2019.04. - present  Kakekomu (Tokyo, Japan)
-            $                   Full-Stack Engineer full time (React, Elm, TypeScript, Koa.js, Ruby on Rails, AWS)
-
-            2018.05. - 2019.03  Kakekomu (Tokyo, Japan)
-            $                   Front-End Engineer part time (React, Next.js)
-
-            2018.01. - 2019.03. Yahoo Japan (Tokyo, Japan)
-            $                   Front-End engineer (React, TypeScript)
-
-            2017.04. - 2017.12. Happiness Technology (Tokyo, Japan)
-            $                   System Engineer (Java, Oracle SQL)
             """
+                ++ (if screenWidth > 80 then
+                        workExperiences
+                            |> List.map
+                                (\( year, title, content ) ->
+                                    year ++ "  " ++ title ++ "\n$                    " ++ content
+                                )
+                            |> String.join "\n\n"
+
+                    else
+                        workExperiences
+                            |> List.map
+                                (\( year, title, content ) ->
+                                    year ++ "\n\n" ++ title ++ "\n" ++ content
+                                )
+                            |> String.join "\n\n"
+                   )
     in
     [ ( "figlet", [ "-f", "small", "Bio" ] )
     , ( "echo", [] )
