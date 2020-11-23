@@ -679,8 +679,7 @@ viewCol { cursorPosition, cursorVisible } ln prevCol char =
                 [ css [ backgroundColor (rgb 0 255 255) ] ]
 
              else
-                [ css [ backgroundColor (rgb 0 255 255) ] ]
-             -- []
+                []
             )
             [ text (String.fromChar char)
             ]
