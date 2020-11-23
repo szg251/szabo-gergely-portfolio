@@ -7,6 +7,7 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, href)
 import List.Extra as ListE
 import Process
+import Screen.Color exposing (ScreenColor(..))
 import Task
 
 
@@ -63,7 +64,7 @@ type Line
 
 type Block a
     = NormalBlock a
-    | Colored ( Color, a )
+    | Colored ( ScreenColor, a )
     | Link ( String, a )
     | EmptyBlock
 
@@ -581,7 +582,7 @@ view model =
     global
         [ body
             [ backgroundColor (rgb 0 0 0)
-            , color (rgb 178 178 178)
+            , color (Screen.Color.toCssColor LightGray)
             , margin zero
             , padding2 (px 20) (px 20)
             , fontFamilies [ "unscii-16", "monospace" ]
@@ -642,7 +643,7 @@ viewBlock model ln prevCol block =
                     ListE.mapAccuml (viewCol model ln) prevCol cols
             in
             ( nextCols
-            , span [ css [ color blockColor ] ] elements
+            , span [ css [ color (Screen.Color.toCssColor blockColor) ] ] elements
             )
 
         Link ( blockUrl, cols ) ->
@@ -694,7 +695,7 @@ print string =
     Print (NormalBlock string)
 
 
-printColored : { color : Color, text : String } -> ScreenCommand
+printColored : { color : ScreenColor, text : String } -> ScreenCommand
 printColored { color, text } =
     Print (Colored ( color, text ))
 
@@ -709,9 +710,9 @@ printLn string =
     Batch [ Print (NormalBlock string), LineBreak ]
 
 
-printColoredLn : Color -> String -> ScreenCommand
-printColoredLn color string =
-    Batch [ Print (Colored ( color, string )), LineBreak ]
+printColoredLn : { color : ScreenColor, text : String } -> ScreenCommand
+printColoredLn { color, text } =
+    Batch [ Print (Colored ( color, text )), LineBreak ]
 
 
 printLinkLn : { url : String, label : String } -> ScreenCommand

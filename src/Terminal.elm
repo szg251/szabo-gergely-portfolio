@@ -27,6 +27,7 @@ import Parser
         , symbol
         )
 import Screen exposing (Block(..), CursorPosition, ScreenCommand(..))
+import Screen.Color
 import Url
 import Url.Builder
 import Url.Parser exposing ((<?>))
@@ -100,11 +101,11 @@ printPrompt prompt withLineBreak =
     if withLineBreak then
         Screen.batch
             [ Screen.lineBreak
-            , Screen.printColored { color = rgb 0 255 0, text = prompt ++ " " }
+            , Screen.printColored { color = Screen.Color.Yellow, text = prompt ++ " " }
             ]
 
     else
-        Screen.printColored { color = rgb 0 255 0, text = prompt ++ " " }
+        Screen.printColored { color = Screen.Color.Yellow, text = prompt ++ " " }
 
 
 type alias TerminalCommand =

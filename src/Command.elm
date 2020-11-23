@@ -1,7 +1,30 @@
 module Command exposing (..)
 
 import Dict exposing (Dict)
+import List.Extra as ListE
+import Parser
+    exposing
+        ( (|.)
+        , (|=)
+        , DeadEnd
+        , Parser
+        , Step(..)
+        , backtrackable
+        , chompUntil
+        , chompUntilEndOr
+        , chompWhile
+        , end
+        , getChompedString
+        , keyword
+        , loop
+        , oneOf
+        , problem
+        , spaces
+        , succeed
+        , symbol
+        )
 import Screen exposing (ScreenCommand)
+import Screen.Color exposing (ScreenColor)
 import Url.Builder
 
 
@@ -17,12 +40,99 @@ type Environment
         }
 
 
+type TextPart
+    = Text String
+    | LineBreak
+    | ColorChange (Maybe ScreenColor)
+
+
+textPartsToScreenCommand : List TextPart -> ScreenCommand
+textPartsToScreenCommand textParts =
+    let
+        ( _, screenCommands ) =
+            List.foldl
+                (\textPart ( lastColor, commands ) ->
+                    case textPart of
+                        Text str ->
+                            case lastColor of
+                                Nothing ->
+                                    ( lastColor, Screen.print str :: commands )
+
+                                Just color ->
+                                    ( lastColor
+                                    , Screen.printColored { color = color, text = str } :: commands
+                                    )
+
+                        LineBreak ->
+                            ( lastColor, Screen.lineBreak :: commands )
+
+                        ColorChange newColor ->
+                            ( newColor, commands )
+                )
+                ( Nothing, [] )
+                textParts
+    in
+    screenCommands |> List.reverse |> Screen.batch
+
+
+parseEchoString : String -> Result (List DeadEnd) (List TextPart)
+parseEchoString =
+    Parser.run
+        (loop [] textParserHelp)
+
+
+textParserHelp : List TextPart -> Parser (Step (List TextPart) (List TextPart))
+textParserHelp revParts =
+    oneOf
+        [ Parser.map (always (Loop (LineBreak :: revParts))) (symbol "\\n")
+        , succeed (\color -> Loop (ColorChange color :: revParts))
+            |. symbol "\\033["
+            |= colorParser
+            |. symbol "m"
+        , Parser.map (\text -> Loop (Text text :: revParts))
+            (succeed ()
+                |. chompWhile (\ch -> ch /= '\\')
+                |> getChompedString
+                |> Parser.andThen
+                    (\str ->
+                        if String.isEmpty str then
+                            problem "empty string"
+
+                        else
+                            succeed str
+                    )
+            )
+        , Parser.map (always (Done (List.reverse revParts))) end
+        ]
+
+
+colorParser : Parser (Maybe ScreenColor)
+colorParser =
+    succeed ()
+        |. chompWhile (\ch -> Char.isDigit ch || ch == ';')
+        |> getChompedString
+        |> Parser.andThen
+            (\colorStr ->
+                if colorStr == "0" then
+                    succeed Nothing
+
+                else
+                    case Screen.Color.fromScreenColor colorStr of
+                        Nothing ->
+                            problem "invalid color"
+
+                        Just color ->
+                            succeed (Just color)
+            )
+
+
 echo : Command
 echo (Environment { args }) _ =
     String.join " " args
-        |> String.split "\\n"
-        |> List.map Screen.printLn
-        |> Screen.batch
+        |> parseEchoString
+        |> Debug.log "hey"
+        |> Result.withDefault []
+        |> textPartsToScreenCommand
 
 
 clear : Command
