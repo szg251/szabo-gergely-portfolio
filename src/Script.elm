@@ -15,7 +15,7 @@ home ((Environment { screenWidth }) as environment) _ =
             My name is Gergely Szabo. I am a Full-Stack Web Developer and a functional programming enthusiast located in Japan.
             I'm also an ex-musician and a serious coffee lover.
 
-            Github page: """
+            """
     in
     (if screenWidth > 40 then
         [ ( "figlet", [ "-c", "-f", "slant", "Szabo", "Gergely" ] ) ]
@@ -31,7 +31,10 @@ home ((Environment { screenWidth }) as environment) _ =
         ++ [ ( "echo", [] )
            , ( "menu", [ "home", "bio", "projects", "music" ] )
            , ( "echo", [ toEchoArg welcomeText ] )
+           , ( "echo", [ "Github page: " ] )
            , ( "link", [ "https://github.com/gege251" ] )
+           , ( "echo", [ "Blogs: " ] )
+           , ( "link", [ "https://dev.to/gege251" ] )
            ]
         |> List.map (evalCommand environment)
         |> Screen.batch

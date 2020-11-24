@@ -179,6 +179,7 @@ menu (Environment { args, screenWidth }) _ =
                     Screen.printLink
                         { url = Url.Builder.absolute [ url ] []
                         , label = url
+                        , target = ""
                         }
                 )
                 options.urls
@@ -256,6 +257,7 @@ readMenuOptions args =
 type LinkOption
     = Url String
     | Label String
+    | Target String
 
 
 readLinkOptions : List String -> List LinkOption
@@ -266,6 +268,9 @@ readLinkOptions args =
                 case fst of
                     "-u" ->
                         Url fst :: readLinkOptions rest
+
+                    "-t" ->
+                        Target fst :: readLinkOptions rest
 
                     _ ->
                         readLinkOptions (snd :: rest)
@@ -283,6 +288,7 @@ link (Environment { args, screenWidth }) _ =
         defaultOptions =
             { url = Nothing
             , label = ""
+            , target = ""
             }
 
         options =
@@ -294,6 +300,9 @@ link (Environment { args, screenWidth }) _ =
 
                         Label label ->
                             { opts | label = label }
+
+                        Target target ->
+                            { opts | target = target }
                 )
                 defaultOptions
                 (readLinkOptions args)
@@ -307,4 +316,5 @@ link (Environment { args, screenWidth }) _ =
                 Nothing ->
                     options.label
         , label = options.label
+        , target = options.target
         }

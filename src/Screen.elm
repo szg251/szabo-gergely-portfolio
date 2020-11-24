@@ -65,7 +65,7 @@ type Line
 type Block a
     = NormalBlock a
     | Colored ( ScreenColor, a )
-    | Link ( String, a )
+    | Link ( String, a, String )
     | EmptyBlock
 
 
@@ -83,8 +83,8 @@ mapBlock fn block =
         Colored ( x, y ) ->
             Colored ( x, fn y )
 
-        Link ( x, y ) ->
-            Link ( x, fn y )
+        Link ( x, y, z ) ->
+            Link ( x, fn y, z )
 
         EmptyBlock ->
             EmptyBlock
@@ -107,12 +107,12 @@ splitBlockAt index block =
             in
             ( Colored ( color, x ), Colored ( color, xs ) )
 
-        Link ( href, xss ) ->
+        Link ( href, xss, target ) ->
             let
                 ( x, xs ) =
                     ListE.splitAt index xss
             in
-            ( Link ( href, x ), Link ( href, xs ) )
+            ( Link ( href, x, target ), Link ( href, xs, target ) )
 
         EmptyBlock ->
             ( EmptyBlock, EmptyBlock )
@@ -127,7 +127,7 @@ isEmptyBlock block =
         Colored ( _, xss ) ->
             List.isEmpty xss
 
-        Link ( _, xss ) ->
+        Link ( _, xss, _ ) ->
             List.isEmpty xss
 
         EmptyBlock ->
@@ -147,9 +147,9 @@ mergeBlocks blockA blockB =
             else
                 [ blockA, blockB ]
 
-        ( Link ( hrefA, a ), Link ( hrefB, b ) ) ->
+        ( Link ( hrefA, a, targetA ), Link ( hrefB, b, targetB ) ) ->
             if hrefA == hrefB then
-                [ Link ( hrefA, a ++ b ) ]
+                [ Link ( hrefA, a ++ b, targetA ) ]
 
             else
                 [ blockA, blockB ]
@@ -161,22 +161,22 @@ mergeBlocks blockA blockB =
 unconsBlock : Block String -> Maybe ( Block Char, Block String )
 unconsBlock block =
     case mapBlock String.uncons block of
-        NormalBlock (Just ( y, z )) ->
-            Just ( NormalBlock y, NormalBlock z )
+        NormalBlock (Just ( y, ys )) ->
+            Just ( NormalBlock y, NormalBlock ys )
 
-        Colored ( x, Just ( y, z ) ) ->
-            Just ( Colored ( x, y ), Colored ( x, z ) )
+        Colored ( x, Just ( y, ys ) ) ->
+            Just ( Colored ( x, y ), Colored ( x, ys ) )
 
-        Link ( x, Just ( y, z ) ) ->
-            Just ( Link ( x, y ), Link ( x, z ) )
+        Link ( x, Just ( y, ys ), z ) ->
+            Just ( Link ( x, y, z ), Link ( x, ys, z ) )
 
         NormalBlock Nothing ->
             Nothing
 
-        Colored ( x, Nothing ) ->
+        Colored ( _, Nothing ) ->
             Nothing
 
-        Link ( x, Nothing ) ->
+        Link ( _, Nothing, _ ) ->
             Nothing
 
         EmptyBlock ->
@@ -192,7 +192,7 @@ blockLength block =
         Colored ( _, x ) ->
             List.length x
 
-        Link ( _, x ) ->
+        Link ( _, x, _ ) ->
             List.length x
 
         EmptyBlock ->
@@ -646,7 +646,7 @@ viewBlock model ln prevCol block =
             , span [ css [ color (Screen.Color.toCssColor blockColor) ] ] elements
             )
 
-        Link ( blockUrl, cols ) ->
+        Link ( blockUrl, cols, target ) ->
             let
                 ( nextCols, elements ) =
                     ListE.mapAccuml (viewCol model ln) prevCol cols
@@ -662,6 +662,7 @@ viewBlock model ln prevCol block =
                         ]
                     ]
                 , href blockUrl
+                , Html.Styled.Attributes.target target
                 ]
                 elements
             )
@@ -699,9 +700,9 @@ printColored { color, text } =
     Print (Colored ( color, text ))
 
 
-printLink : { url : String, label : String } -> ScreenCommand
-printLink { url, label } =
-    Print (Link ( url, label ))
+printLink : { url : String, label : String, target : String } -> ScreenCommand
+printLink { url, label, target } =
+    Print (Link ( url, label, target ))
 
 
 printLn : String -> ScreenCommand
@@ -714,9 +715,9 @@ printColoredLn { color, text } =
     Batch [ Print (Colored ( color, text )), LineBreak ]
 
 
-printLinkLn : { url : String, label : String } -> ScreenCommand
-printLinkLn { url, label } =
-    Batch [ Print (Link ( url, label )), LineBreak ]
+printLinkLn : { url : String, label : String, target : String } -> ScreenCommand
+printLinkLn { url, label, target } =
+    Batch [ Print (Link ( url, label, target )), LineBreak ]
 
 
 lineBreak : ScreenCommand
