@@ -127,7 +127,6 @@ echo : Command
 echo (Environment { args }) _ =
     String.join " " args
         |> parseEchoString
-        |> Debug.log "hey"
         |> Result.withDefault []
         |> textPartsToScreenCommand
 
