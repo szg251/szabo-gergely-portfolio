@@ -654,11 +654,11 @@ viewBlock model ln prevCol block =
             ( nextCols
             , a
                 [ css
-                    [ color inherit
-                    , textDecoration none
+                    [ textDecoration none
+                    , color (Screen.Color.toCssColor Screen.Color.Cyan)
                     , hover
-                        [ color (rgb 0 0 255)
-                        , backgroundColor (rgb 255 178 178)
+                        [ color (Screen.Color.toCssColor Screen.Color.Blue)
+                        , backgroundColor (Screen.Color.toCssColor Screen.Color.Cyan)
                         ]
                     ]
                 , href blockUrl
