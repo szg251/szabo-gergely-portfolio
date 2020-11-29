@@ -2,11 +2,9 @@ module Terminal exposing (..)
 
 import Browser.Navigation as Nav
 import Command exposing (Command, Environment(..))
-import Css exposing (rgb)
 import Dict exposing (Dict)
 import Json.Decode as Decode
 import List.Extra as ListE
-import Maybe.Extra as MaybeE
 import Parser
     exposing
         ( (|.)
@@ -26,12 +24,11 @@ import Parser
         , succeed
         , symbol
         )
-import Screen exposing (Block(..), CursorPosition, ScreenCommand(..))
+import Screen exposing (Block(..), ScreenCommand(..))
 import Screen.Color
 import Url
 import Url.Builder
-import Url.Parser exposing ((<?>))
-import Url.Parser.Query
+import Url.Parser 
 
 
 type Msg

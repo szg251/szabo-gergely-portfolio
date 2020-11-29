@@ -1,6 +1,6 @@
 module ProfileImage exposing (..)
 
-import Screen exposing (CursorPosition, ScreenCommand, batch, moveCursor)
+import Screen exposing (ScreenCommand, batch, moveCursor)
 
 
 printImage : String -> ScreenCommand

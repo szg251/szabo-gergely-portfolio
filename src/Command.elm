@@ -1,7 +1,6 @@
 module Command exposing (..)
 
 import Dict exposing (Dict)
-import List.Extra as ListE
 import Parser
     exposing
         ( (|.)
@@ -9,17 +8,12 @@ import Parser
         , DeadEnd
         , Parser
         , Step(..)
-        , backtrackable
-        , chompUntil
-        , chompUntilEndOr
         , chompWhile
         , end
         , getChompedString
-        , keyword
         , loop
         , oneOf
         , problem
-        , spaces
         , succeed
         , symbol
         )
@@ -267,10 +261,10 @@ readLinkOptions args =
             if String.startsWith "-" fst then
                 case fst of
                     "-u" ->
-                        Url fst :: readLinkOptions rest
+                        Url snd :: readLinkOptions rest
 
                     "-t" ->
-                        Target fst :: readLinkOptions rest
+                        Target snd :: readLinkOptions rest
 
                     _ ->
                         readLinkOptions (snd :: rest)

@@ -1,16 +1,13 @@
 module Main exposing (Model, Msg, init, subscriptions, update, view)
 
 import Browser
-import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
 import Command
 import Device exposing (Device, WindowSize)
 import Figlet
 import Html.Styled
-import Http
-import Json.Decode as Decode exposing (decodeValue)
-import ProfileImage
+import Json.Decode as Decode
 import Screen exposing (Block(..), ScreenCommand(..))
 import Script
 import Terminal
@@ -37,7 +34,6 @@ type alias Flags =
 
 type alias Model =
     { key : Nav.Key
-    , page : Page
     , nextUrl : Url.Url
     , device : Device
     , screenModel : Screen.Model
@@ -68,6 +64,7 @@ init flags url key =
                     , ( "menu", Command.menu )
                     , ( "link", Command.link )
                     , ( "home", Script.home )
+                    , ( "mainmenu", Script.mainmenu )
                     , ( "bio", Script.bio )
                     , ( "projects", Script.projects )
                     , ( "music", Script.music )
@@ -85,7 +82,6 @@ init flags url key =
                 }
     in
     ( { key = key
-      , page = Initializing
       , nextUrl = url
       , device = Device.fromWindowSize flags.windowSize
       , screenModel = screenModel
@@ -96,26 +92,16 @@ init flags url key =
 
 
 type Msg
-    = NoOp
-    | WindowSizeChanged { width : Int, height : Int }
+    = WindowSizeChanged { width : Int, height : Int }
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
     | TerminalMsg Terminal.Msg
     | ScreenMsg Screen.Msg
 
 
-type Page
-    = Initializing
-    | Home
-    | Error
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
-            ( model, Cmd.none )
-
         WindowSizeChanged windowSize ->
             let
                 screenWidth =
