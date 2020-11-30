@@ -193,7 +193,7 @@ projects environment _ =
             [ { label = "Chess"
               , description = "Chess game written in Elm."
               , source = Just "https://github.com/gege251/chess"
-              , example = "https://chess.gege251.now.sh/"
+              , example = "https://chess.gege251.vercel.app/"
               }
             , { label = "Space Invaders"
               , description = "Space Invaders game in Elm."
