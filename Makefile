@@ -11,6 +11,12 @@ dev-server:
 build:
 	nix build
 
+deploy:
+	nix build && vercel
+
+deploy-prod:
+	nix build && vercel --prod
+
 tests:
 	nix-shell --run "elm-test"
 
