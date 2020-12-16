@@ -210,6 +210,11 @@ projects environment _ =
               , source = Nothing
               , example = "https://sakuenglishcafe.com"
               }
+            , { label = "Szabo Gergely portfolio"
+              , description = "This web page."
+              , source = Just "https://github.com/gege251/szabo-gergely-portfolio"
+              , example = "https://szabogergely.com"
+              }
             ]
     in
     [ ( "figlet", [ "-f", "small", "Projects" ] )
