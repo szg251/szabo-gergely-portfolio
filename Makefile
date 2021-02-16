@@ -1,21 +1,27 @@
+ENV=staging
+
 run: 
 	nix-shell --run "make prepare-dev && make dev-server"
 
 prepare-dev:
 	rm -rf  ./dist
 	cp -r ./src/assets ./dist
+	haskell-mustache ./dist/index.html.mustache ./env.${ENV}.json > ./dist/index.html
+	rm ./dist/index.html.mustache
 
 dev-server:
 	elm-live ./src/Main.elm --pushstate --dir=./dist/ -- --output=./dist/Main.min.js --debug
 
 build:
-	nix build
+	nix build --argstr env ${ENV}
 
-deploy:
-	nix build && vercel
+deploy: build 
+ifeq ("${ENV}", "prod")
+	vercel --prod
+else
+	vercel
+endif
 
-deploy-prod:
-	nix build && vercel --prod
 
 tests:
 	nix-shell --run "elm-test"

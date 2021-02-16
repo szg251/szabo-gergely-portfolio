@@ -1,4 +1,4 @@
-{ }:
+{ env ? "staging" }:
 
 let
   sources = import ./nix/sources.nix;
@@ -9,7 +9,7 @@ let
     nixpkgs.stdenv.mkDerivation {
       inherit name src;
 
-      buildInputs = [ nixpkgs.elmPackages.elm ]
+      buildInputs = [ nixpkgs.elmPackages.elm nixpkgs.haskellPackages.mustache ]
         ++ nixpkgs.lib.optional outputJavaScript nixpkgs.nodePackages.uglify-js;
 
       buildPhase = nixpkgs.elmPackages.fetchElmDeps {
@@ -36,6 +36,8 @@ let
           ''}
         '') targets)}
         cp -r $PWD/${srcdir}/assets/* $out
+        haskell-mustache $out/index.html.mustache $PWD/env.${env}.json > $out/index.html
+        rm $out/index.html.mustache
       '';
     };
 in mkDerivation {

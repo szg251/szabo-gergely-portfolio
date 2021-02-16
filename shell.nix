@@ -10,5 +10,6 @@ stdenv.mkDerivation {
     elm-test
     nodePackages.uglify-js
     elm2nix
+    haskellPackages.mustache
   ];
 }

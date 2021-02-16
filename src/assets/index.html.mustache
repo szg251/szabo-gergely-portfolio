@@ -5,6 +5,9 @@
     <meta name="description" content="Szabo Gergely Web-Engineer portfolio." />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="shortcut icon" href="favicon.ico" />
+    {{#noIndex}}
+    <meta name="robots" content="noindex">
+    {{/noIndex}}
     <title>Szabo Gergely portfolio</title>
     <style>
       @font-face {
@@ -34,5 +37,14 @@
         }
       });
     </script>
+    {{#analytics}}
+    <!-- Cloudflare Web Analytics -->
+    <script
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "2c8d510d6d1a43d78f88c525251701e2"}'
+    ></script>
+    <!-- End Cloudflare Web Analytics -->
+    {{/analytics}}
   </body>
 </html>
