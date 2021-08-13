@@ -13,15 +13,10 @@ dev-server:
 	elm-live ./src/Main.elm --pushstate --dir=./dist/ -- --output=./dist/Main.min.js --debug
 
 build:
-	nix build --argstr env ${ENV}
+	nix-build --argstr env ${ENV}
 
 deploy: build 
-ifeq ("${ENV}", "prod")
-	vercel --prod
-else
-	vercel
-endif
-
+	nix-shell --run "ENV=${ENV} ./scripts/deploy.sh"
 
 tests:
 	nix-shell --run "elm-test"

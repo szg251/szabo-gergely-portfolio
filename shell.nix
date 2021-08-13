@@ -12,5 +12,8 @@ in
       nodePackages.uglify-js
       elm2nix
       haskellPackages.mustache
+
+      nodePackages.vercel
+      ipfs
     ];
   }
