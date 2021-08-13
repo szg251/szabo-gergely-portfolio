@@ -101,7 +101,11 @@ bio ((Environment { screenWidth }) as environment) _ =
                    )
 
         workExperiences =
-            [ ( "2019.04. - present "
+            [ ( "2021.08. - present "
+              , green ++ "MLabs" ++ noColor
+              , "Haskell and Plutus consultant"
+              )
+            , ( "2019.04. - 2021.07 "
               , green ++ "Kakekomu (Tokyo, Japan)" ++ noColor
               , "Full-Stack Engineer full time (React, Elm, TypeScript, Koa.js, Ruby on Rails, AWS)"
               )
@@ -152,9 +156,6 @@ bio ((Environment { screenWidth }) as environment) _ =
               )
             , ( green ++ "Japanese" ++ noColor
               , "fluent - JLPT N1"
-              )
-            , ( green ++ "Italian" ++ noColor
-              , "beginner"
               )
             ]
 
