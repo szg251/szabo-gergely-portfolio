@@ -68,20 +68,23 @@ bio : Command
 bio ((Environment { screenWidth }) as environment) _ =
     let
         skills =
-            [ ( green ++ "Elm" ++ noColor
-              , "I use Elm professionally, and I also use it for most of my side-projects. Writing applications with a strongly typed purely functional language gives me the confidence to iterate faster. Learning Elm helped me in writing cleaner code when using other languages."
+            [ ( green ++ "Haskell" ++ noColor
+              , "Experience building backend applications and CLI tools for blockchain tools and dApps."
+              )
+            , ( green ++ "Blockchain (Cardano, Plutus)" ++ noColor
+              , "Writing specifications and building dApps with Plutus"
+              )
+            , ( green ++ "Elm" ++ noColor
+              , "Several years of professional experience"
               )
             , ( green ++ "React, JavaScript, TypeScript" ++ noColor
-              , "I've been using React and TypeScript professionally to build and maintain both large and small scale front-end applications."
+              , "Working with React and TypeScript professionally to build and maintain large scale frontend and backend applications."
               )
-            , ( green ++ "Haskell" ++ noColor
-              , "I have not had the luck to work with Haskell in a professional environment. However, I love using it for my side-projects, mostly because of its type safety."
-              )
-            , ( green ++ "Express, Koa.js, Servant, Ruby on Rails" ++ noColor
-              , "I use these frameworks to build backend services."
+            , ( green ++ "Servant, Express, Koa.js, Servant, Ruby on Rails" ++ noColor
+              , "Experience building backend services."
               )
             , ( green ++ "AWS, GCP, Docker, Nix, MySQL, PostgreSQL" ++ noColor
-              , "I have some experience with these technologies intermediate level."
+              , "Work experience with the above tehcnologies."
               )
             ]
 
