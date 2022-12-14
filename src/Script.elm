@@ -68,7 +68,7 @@ bio : Command
 bio ((Environment { screenWidth }) as environment) _ =
     let
         skills =
-            [ ( green ++ "Haskell" ++ noColor
+            [ ( green ++ "Haskell/PureScript" ++ noColor
               , "Experience building backend applications and CLI tools for blockchain tools and dApps."
               )
             , ( green ++ "Blockchain (Cardano, Plutus)" ++ noColor
@@ -83,7 +83,7 @@ bio ((Environment { screenWidth }) as environment) _ =
             , ( green ++ "Servant, Express, Koa.js, Servant, Ruby on Rails" ++ noColor
               , "Experience building backend services."
               )
-            , ( green ++ "AWS, GCP, Docker, Nix, MySQL, PostgreSQL" ++ noColor
+            , ( green ++ "Nix, AWS, GCP, Docker, MySQL, PostgreSQL" ++ noColor
               , "Work experience with the above tehcnologies."
               )
             ]
