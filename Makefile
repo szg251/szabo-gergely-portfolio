@@ -15,7 +15,8 @@ dev-server:
 build:
 	nix-build --argstr env ${ENV}
 
-deploy: build 
+# deploy: build 
+deploy:  
 	nix-shell --run "ENV=${ENV} ./scripts/deploy.sh"
 
 tests:
