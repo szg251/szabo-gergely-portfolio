@@ -2,8 +2,8 @@
 
 if [[ $ENV == "prod" ]]
 then
-  # echo "Deploying to Vercel..."
-	# vercel --prod
+  echo "Deploying to Vercel..."
+	vercel --prod
 
   echo "Deploying to IPFS..."
   cd result
