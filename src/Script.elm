@@ -28,7 +28,7 @@ home ((Environment { screenWidth }) as environment) _ =
             """
             Hi!
             My name is Gergely Szabo. Welcome to my portfolio website.
-            I am a Full-Stack Web Developer located in Japan.
+            I am a Full-Stack Web Developer located in Hungary.
             I'm also an ex-musician, you can find a few of my videos and albums under the music menu.
 
             This website is a bit unconventional. You can click on menu links, or use the keyboard to type in commands. If you got annoyed by the slow print, just hit Enter!
