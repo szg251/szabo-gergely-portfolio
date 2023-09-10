@@ -49,9 +49,9 @@ home ((Environment { screenWidth }) as environment) _ =
            , ( "mainmenu", [] )
            , ( "echo", [ toEchoArg welcomeText ] )
            , ( "echo", [ white ++ "Github page: " ] )
-           , ( "link", [ "https://github.com/gege251" ] )
+           , ( "link", [ "https://github.com/szg251" ] )
            , ( "echo", [ white ++ "Blogs: " ] )
-           , ( "link", [ "https://dev.to/gege251" ] )
+           , ( "link", [ "https://dev.to/szg251" ] )
            , ( "echo", [ white ++ "Twitter: " ] )
            , ( "link", [ "https://twitter.com/gege251" ] )
            ]
