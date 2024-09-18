@@ -2,7 +2,7 @@
 
 if [[ $ENV == "prod" ]]
 then
-  echo "Deploying to Vercel..."
+  echo "Deploying prod to Vercel..."
 	vercel --prod
 
   echo "Deploying to IPFS..."
@@ -13,5 +13,6 @@ then
   echo $ipfsHash
   cd ../
 else
+  echo "Deploying staging to Vercel... (add ENV=prod for production)"
 	vercel
 fi
