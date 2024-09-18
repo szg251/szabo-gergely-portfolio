@@ -28,7 +28,7 @@ home ((Environment { screenWidth }) as environment) _ =
             """
             Hi!
             My name is Gergely Szabo. Welcome to my portfolio website.
-            I am a Full-Stack Web Developer located in Hungary.
+            I am a Software Developer located in Hungary.
             I'm also an ex-musician, you can find a few of my videos and albums under the music menu.
 
             This website is a bit unconventional. You can click on menu links, or use the keyboard to type in commands. If you got annoyed by the slow print, just hit Enter!
@@ -68,7 +68,7 @@ bio : Command
 bio ((Environment { screenWidth }) as environment) _ =
     let
         skills =
-            [ ( green ++ "Haskell/PureScript" ++ noColor
+            [ ( green ++ "Haskell/PureScript/Rust" ++ noColor
               , "Experience building backend applications and CLI tools for blockchain tools and dApps."
               )
             , ( green ++ "Blockchain (Cardano, Plutus)" ++ noColor
@@ -194,30 +194,15 @@ projects : Command
 projects environment _ =
     let
         pjs =
-            [ { label = "Chess"
-              , description = "Chess game written in Elm."
-              , source = Just "https://github.com/gege251/chess"
-              , example = "https://chess.gege251.vercel.app/"
-              }
-            , { label = "Space Invaders"
-              , description = "Space Invaders game in Elm."
-              , source = Just "https://github.com/gege251/space_invaders"
-              , example = "https://space-invaders.now.sh/"
-              }
-            , { label = "elm-validator-pipeline"
-              , description = "Validate values and apply them to a user defined type. "
-              , source = Just "https://github.com/gege251/elm-validator-pipeline"
-              , example = "https://package.elm-lang.org/packages/gege251/elm-validator-pipeline/latest/"
-              }
-            , { label = "Saku English Cafe"
-              , description = "English speaker's community in Saku, Japan. Written in Haskell and Elm."
-              , source = Nothing
-              , example = "https://sakuenglishcafe.com"
+            [ { label = "tx-village"
+              , description = "Cardano transaction framework"
+              , source = Just "https://github.com/mlabs-haskell/tx-village"
+              , example = Nothing
               }
             , { label = "Szabo Gergely portfolio"
               , description = "This web page."
               , source = Just "https://github.com/gege251/szabo-gergely-portfolio"
-              , example = "https://szabogergely.com"
+              , example = Just "https://szabogergely.com"
               }
             ]
     in
@@ -230,7 +215,7 @@ projects environment _ =
                     [ Just ( "echo", [ white, label, noColor, "\\n" ] )
                     , Just ( "echo", [ description, "\\n" ] )
                     , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, "Source" ] )) source
-                    , Just ( "link", [ "-t", "_blank", "-u", example, "Running Example" ] )
+                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, "Link" ] )) example
                     ]
             )
             pjs
