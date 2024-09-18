@@ -50,10 +50,8 @@ home ((Environment { screenWidth }) as environment) _ =
            , ( "echo", [ toEchoArg welcomeText ] )
            , ( "echo", [ white ++ "Github page: " ] )
            , ( "link", [ "https://github.com/szg251" ] )
-           , ( "echo", [ white ++ "Blogs: " ] )
-           , ( "link", [ "https://dev.to/szg251" ] )
-           , ( "echo", [ white ++ "Twitter: " ] )
-           , ( "link", [ "https://twitter.com/gege251" ] )
+           , ( "echo", [ white ++ "LinkedIn:" ] )
+           , ( "link", [ "https://www.linkedin.com/in/szg251" ] )
            ]
         |> List.map (evalCommand environment)
         |> Screen.batch
