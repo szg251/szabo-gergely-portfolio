@@ -31,15 +31,144 @@ import Screen
 
 run : Command
 run (Environment { args, screenWidth }) pipedInput =
+    case parseOptions screenWidth pipedInput args of
+        Err errMsg ->
+            Screen.printLn errMsg
+
+        Ok options ->
+            let
+                fonts =
+                    Dict.fromList
+                        [ ( "standard", Font.standard )
+                        , ( "starwars", Font.starwars )
+                        , ( "mini", Font.mini )
+                        , ( "small", Font.small )
+                        , ( "block", Font.block )
+                        , ( "slant", Font.slant )
+                        ]
+
+                parsedFont =
+                    Dict.get options.fontName fonts
+                        |> Maybe.andThen (Parser.run fontParser >> Result.toMaybe)
+            in
+            if options.help then
+                Screen.batch
+                    [ Screen.printLn "FIGlet - display large characters made up of ordinary scraeen characters"
+                    , Screen.printLn "Usage: figlet [OPTIONS]"
+                    , Screen.printLn "Options:"
+                    , Screen.printLn "    -f, --fontname <standard | starwars | mini | small | block | slant>"
+                    , Screen.printLn "        Font name [default: standard]"
+                    , Screen.printLn "    -w, --width <INTEGER>"
+                    , Screen.printLn "        Width used for text alignment [default: screen width]"
+                    , Screen.printLn "    -c, --center"
+                    , Screen.printLn "        Align to center"
+                    , Screen.printLn "    -l, --left"
+                    , Screen.printLn "        Align to left"
+                    , Screen.printLn "    -r, --right"
+                    , Screen.printLn "        Align to right"
+                    , Screen.printLn "    -h, --help"
+                    , Screen.printLn "        Print help"
+                    ]
+
+            else
+                case parsedFont of
+                    Nothing ->
+                        Screen.printLn ("Unable to open font file: " ++ options.fontName)
+
+                    Just font ->
+                        Screen.batch
+                            (toLines font options.width options.align options.input
+                                |> List.map Screen.printLn
+                            )
+
+
+type Option
+    = FontName String
+    | Width Int
+    | Input String
+    | Align Align
+    | Help
+
+
+type Align
+    = Left
+    | Center
+    | Right
+
+
+type alias Options =
+    { fontName : String
+    , width : Int
+    , input : String
+    , align : Align
+    , help : Bool
+    }
+
+
+readOptions : List String -> Result String (List Option)
+readOptions args =
+    case args of
+        fst :: rest ->
+            if String.startsWith "-" fst then
+                if fst == "-f" || fst == "--fontname" then
+                    case rest of
+                        snd :: rest2 ->
+                            readOptions rest2 |> Result.map ((::) (FontName snd))
+
+                        _ ->
+                            Err "a value is required for -f, for more information try -h"
+
+                else if fst == "-w" || fst == "--width" then
+                    case rest of
+                        snd :: rest2 ->
+                            case String.toInt snd of
+                                Just int ->
+                                    readOptions rest2 |> Result.map ((::) (Width int))
+
+                                Nothing ->
+                                    Err "a value is required for -w, for more information try -h"
+
+                        _ ->
+                            Err "a value is required for -w, for more information try -h"
+
+                else if fst == "-c" || fst == "--center" then
+                    readOptions rest |> Result.map ((::) (Align Center))
+
+                else if fst == "-l" || fst == "--left" then
+                    readOptions rest |> Result.map ((::) (Align Left))
+
+                else if fst == "-r" || fst == "--right" then
+                    readOptions rest |> Result.map ((::) (Align Right))
+
+                else if fst == "-h" || fst == "--help" then
+                    Ok [ Help ]
+
+                else if fst == "" then
+                    Err "no input"
+
+                else
+                    Err "invalid argument"
+
+            else
+                Ok [ Input (String.join " " args) ]
+
+        [] ->
+            Err "no input"
+
+
+parseOptions : Int -> Maybe String -> List String -> Result String Options
+parseOptions screenWidth pipedInput args =
     let
         defaultOptions =
             { fontName = "standard"
             , width = screenWidth
             , input = ""
             , align = Left
+            , help = False
             }
-
-        options =
+    in
+    Result.map
+        (\optList ->
             List.foldl
                 (\opt opts ->
                     case opt of
@@ -57,82 +186,14 @@ run (Environment { args, screenWidth }) pipedInput =
 
                         Align align ->
                             { opts | align = align }
+
+                        Help ->
+                            { opts | help = True }
                 )
                 defaultOptions
-                (readOptions args)
-
-        fonts =
-            Dict.fromList
-                [ ( "standard", Font.standard )
-                , ( "starwars", Font.starwars )
-                , ( "mini", Font.mini )
-                , ( "small", Font.small )
-                , ( "block", Font.block )
-                , ( "slant", Font.slant )
-                ]
-
-        parsedFont =
-            Dict.get options.fontName fonts
-                |> Maybe.andThen (Parser.run fontParser >> Result.toMaybe)
-    in
-    case parsedFont of
-        Nothing ->
-            Screen.printLn ("Unable to open font file: " ++ options.fontName)
-
-        Just font ->
-            Screen.batch
-                (toLines font options.width options.align options.input
-                    |> List.map Screen.printLn
-                )
-
-
-type Option
-    = FontName String
-    | Width Int
-    | Input String
-    | Align Align
-
-
-type Align
-    = Left
-    | Center
-    | Right
-
-
-readOptions : List String -> List Option
-readOptions args =
-    case args of
-        fst :: snd :: rest ->
-            if String.startsWith "-" fst then
-                case fst of
-                    "-f" ->
-                        FontName snd :: readOptions rest
-
-                    "-w" ->
-                        case String.toInt snd of
-                            Just int ->
-                                Width int :: readOptions rest
-
-                            Nothing ->
-                                readOptions rest
-
-                    "-c" ->
-                        Align Center :: readOptions (snd :: rest)
-
-                    "-l" ->
-                        Align Left :: readOptions (snd :: rest)
-
-                    "-r" ->
-                        Align Right :: readOptions (snd :: rest)
-
-                    _ ->
-                        readOptions (snd :: rest)
-
-            else
-                [ Input (String.join " " args) ]
-
-        _ ->
-            [ Input (String.join " " args) ]
+                optList
+        )
+        (readOptions args)
 
 
 toLines : Font -> Int -> Align -> String -> List String

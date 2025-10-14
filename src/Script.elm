@@ -32,6 +32,8 @@ home ((Environment { screenWidth }) as environment) _ =
             I'm also an ex-musician, you can find a few of my videos and albums under the music menu.
 
             This website is a bit unconventional. You can click on menu links, or use the keyboard to type in commands. If you got annoyed by the slow print, just hit Enter!
+
+            One more tip: play around with figlet!
             """
     in
     (if screenWidth > 40 then
@@ -50,7 +52,7 @@ home ((Environment { screenWidth }) as environment) _ =
            , ( "echo", [ toEchoArg welcomeText ] )
            , ( "echo", [ white ++ "Github page: " ] )
            , ( "link", [ "https://github.com/szg251" ] )
-           , ( "echo", [ white ++ "LinkedIn:" ] )
+           , ( "echo", [ white ++ "LinkedIn: " ] )
            , ( "link", [ "https://www.linkedin.com/in/szg251" ] )
            ]
         |> List.map (evalCommand environment)

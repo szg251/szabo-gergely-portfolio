@@ -28,7 +28,7 @@ import Screen exposing (Block(..), ScreenCommand(..))
 import Screen.Color
 import Url
 import Url.Builder
-import Url.Parser 
+import Url.Parser
 
 
 type Msg
