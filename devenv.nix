@@ -30,11 +30,19 @@
       };
 
       "deploy:prod" = {
-        exec = "vercel deploy dist/prod --prod -y";
+        exec = ''
+          test -d dist/prod
+          cp -r .vercel dist/prod/
+          vercel deploy dist/prod --local-config vercel.json --prod -y
+        '';
       };
 
       "deploy:staging" = {
-        exec = "vercel deploy dist/staging -y";
+        exec = ''
+          test -d dist/staging
+          cp -r .vercel dist/staging/
+          vercel deploy dist/staging --local-config vercel.json -y
+        '';
       };
 
     }
