@@ -60,7 +60,7 @@ suite =
                                 batch
                                     [ print "4567"
                                     , moveCursor (always ( 0, 0 ))
-                                    , printLink { url = "https://example.com", label = "0123" }
+                                    , printLink { url = "https://example.com", label = "0123", target = "" }
                                     ]
                         }
                             |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
@@ -68,7 +68,7 @@ suite =
                     expectedOutput =
                         [ Line
                             [ NormalBlock [ '7', '6', '5', '4' ]
-                            , Link ( "https://example.com", [ '3', '2', '1', '0' ] )
+                            , Link ( "https://example.com", [ '3', '2', '1', '0' ] , "")
                             ]
                         ]
                 in
@@ -102,7 +102,7 @@ suite =
                                 batch
                                     [ print "4567"
                                     , moveCursor (always ( 0, 2 ))
-                                    , printLink { url = "https://example.com", label = "0123" }
+                                    , printLink { url = "https://example.com", label = "0123", target = "" }
                                     ]
                         }
                             |> for 9 (Screen.update Screen.EvalNextCommand >> Tuple.first)
@@ -110,7 +110,7 @@ suite =
                     expectedOutput =
                         [ Line
                             [ NormalBlock [ '7', '6' ]
-                            , Link ( "https://example.com", [ '3', '2', '1', '0' ] )
+                            , Link ( "https://example.com", [ '3', '2', '1', '0' ] , "")
                             , NormalBlock [ '5', '4' ]
                             ]
                         ]
