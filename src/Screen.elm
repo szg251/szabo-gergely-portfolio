@@ -531,17 +531,17 @@ trimHeight model =
 deleteChar : CursorPosition -> VisibleOutput -> VisibleOutput
 deleteChar cursorPosition visibleOutput =
     splitVisibleOutputAt cursorPosition visibleOutput
-        |> (\splitted ->
-                case splitted.currentLnLeft of
+        |> (\split ->
+                case split.currentLnLeft of
                     [] ->
-                        splitted
+                        split
 
                     block :: restBlocks ->
                         let
                             ( _, remainder ) =
                                 splitBlockAt 1 block
                         in
-                        { splitted | currentLnLeft = remainder :: restBlocks }
+                        { split | currentLnLeft = remainder :: restBlocks }
            )
         |> mergeVisibleOutput
 
@@ -549,17 +549,17 @@ deleteChar cursorPosition visibleOutput =
 clearLine : CursorPosition -> VisibleOutput -> VisibleOutput
 clearLine cursorPosition visibleOutput =
     splitVisibleOutputAt cursorPosition visibleOutput
-        |> (\splitted ->
-                case splitted.currentLnLeft of
+        |> (\split ->
+                case split.currentLnLeft of
                     [] ->
-                        splitted
+                        split
 
                     block :: restBlocks ->
                         let
                             ( _, remainder ) =
                                 splitBlockAt 1 block
                         in
-                        { splitted | currentLnLeft = [], currentLnRight = [] }
+                        { split | currentLnLeft = [], currentLnRight = [] }
            )
         |> mergeVisibleOutput
 
@@ -567,8 +567,8 @@ clearLine cursorPosition visibleOutput =
 insertChar : CursorPosition -> Block Char -> VisibleOutput -> VisibleOutput
 insertChar cursorPosition charBlock visibleOutput =
     splitVisibleOutputAt cursorPosition visibleOutput
-        |> (\splitted ->
-                { splitted | currentLnLeft = mapBlock List.singleton charBlock :: splitted.currentLnLeft }
+        |> (\split ->
+                { split | currentLnLeft = mapBlock List.singleton charBlock :: split.currentLnLeft }
            )
         |> mergeVisibleOutput
 
@@ -614,9 +614,9 @@ viewLn model ln (Line blocks) =
     in
     splitLongLine blocks
         |> List.indexedMap
-            (\index splitted ->
+            (\index split ->
                 span [ css [ display block, height (px 20) ] ]
-                    ((EmptyBlock :: splitted)
+                    ((EmptyBlock :: split)
                         |> List.map (mapBlock List.reverse)
                         |> List.reverse
                         |> ListE.mapAccuml (viewBlock model ln) (index * model.screenWidth)

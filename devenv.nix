@@ -15,6 +15,8 @@
 
   languages.elm.enable = true;
 
+  git-hooks.hooks.typos.enable = true;
+
   tasks =
     let
       envs = [
