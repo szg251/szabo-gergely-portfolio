@@ -15,7 +15,10 @@
 
   languages.elm.enable = true;
 
-  git-hooks.hooks.typos.enable = true;
+  git-hooks.hooks = {
+    typos.enable = true;
+    elm-format.enable = true;
+  };
 
   tasks =
     let
