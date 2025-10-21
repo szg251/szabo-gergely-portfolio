@@ -49,7 +49,7 @@ home ((Environment { screenWidth }) as environment) _ =
     )
         ++ [ ( "echo", [] )
            , ( "mainmenu", [] )
-           , ( "echo", [ toEchoArg welcomeText ] )
+           , ( "echo", [ multiline welcomeText ] )
            , ( "echo", [ white ++ "Github page: " ] )
            , ( "link", [ "https://github.com/szg251" ] )
            , ( "echo", [ white ++ "LinkedIn: " ] )
@@ -61,47 +61,48 @@ home ((Environment { screenWidth }) as environment) _ =
 
 mainmenu : Command
 mainmenu environment _ =
-    evalCommand environment ( "menu", [ "home", "bio", "projects", "music" ] )
+    evalCommand environment ( "menu", [ "home", "skills", "projects", "music" ] )
 
 
-bio : Command
-bio ((Environment { screenWidth }) as environment) _ =
+skills : Command
+skills ((Environment { screenWidth }) as environment) _ =
     let
-        skills =
-            [ ( green ++ "Haskell/PureScript/Rust" ++ noColor
-              , "Experience building backend applications and CLI tools for blockchain tools and dApps."
+        mySkills =
+            [ ( green ++ "Programming language skills: Rust/Haskell/TypeScript" ++ noColor
+              , "I have several years of experience using Rust, Haskell, PureScript and TypeScript, but also worked on projects with Elm, Ruby and Python."
               )
-            , ( green ++ "Blockchain (Cardano, Plutus)" ++ noColor
-              , "Writing specifications and building dApps with Plutus"
+            , ( green ++ "Backend developer experience" ++ noColor
+              , "Designed and built REST and gRPC backend services with the following libraries (non-exclusive list): Rocket, Axum, Tonic, Servant, IHP, Koa.js, Ruby on Rails."
               )
-            , ( green ++ "Elm" ++ noColor
-              , "Several years of professional experience"
+            , ( green ++ "Databases" ++ noColor
+              , "Mostly but not exclusively used relational databases like PostgreSQL for backend applications and blockchain indexers handling large amount of data."
               )
-            , ( green ++ "React, JavaScript, TypeScript" ++ noColor
-              , "Working with React and TypeScript professionally to build and maintain large scale frontend and backend applications."
+            , ( green ++ "Blockchain dApp development" ++ noColor
+              , "Designed and implemented several Cardano dApps, including sidechains, voting protoocols, etc."
               )
-            , ( green ++ "Servant, Express, Koa.js, Servant, Ruby on Rails" ++ noColor
-              , "Experience building backend services."
+            , ( green ++ "Frontend developer experience" ++ noColor
+              , "Worked as a full stack engineer maintaining large scale frontend and backend applications, using React (TypesScript) and Elm."
               )
-            , ( green ++ "Nix, AWS, GCP, Docker, MySQL, PostgreSQL" ++ noColor
-              , "Work experience with the above tehcnologies."
+            , ( green ++ "DevOps" ++ noColor
+              , "Configureed and maintained projects using Nix (Hercules CI), AWS (ECS, Aurora, Lambda, S3), GCP"
               )
             ]
 
         skillsText =
+            mySkills
+                |> List.map
+                    (\( name, description ) ->
+                        name ++ "\n" ++ description
+                    )
+                |> String.join "\n\n"
+
+        workExperiencesTitle =
             white
                 ++ """
-                   Skills (non-exhaustive list)
-                   ----------------------------
+                   Work Experiences
+                   ----------------
                    """
                 ++ noColor
-                ++ (skills
-                        |> List.map
-                            (\( name, description ) ->
-                                name ++ "\n" ++ description
-                            )
-                        |> String.join "\n\n"
-                   )
 
         workExperiences =
             [ ( "2021.08. - present "
@@ -127,12 +128,7 @@ bio ((Environment { screenWidth }) as environment) _ =
             ]
 
         workExperiencesText =
-            white
-                ++ """
-                   Work Experiences
-                   ----------------
-                   """
-                ++ noColor
+            workExperiencesTitle
                 ++ (if screenWidth > 80 then
                         workExperiences
                             |> List.map
@@ -177,14 +173,14 @@ bio ((Environment { screenWidth }) as environment) _ =
                         |> String.join "\n\n"
                    )
     in
-    [ ( "figlet", [ "-f", "small", "Bio" ] )
+    [ ( "figlet", [ "-f", "small", "Skills" ] )
     , ( "link", [ "-u", "mainmenu", "<- back to main menu" ] )
     , ( "echo", [] )
-    , ( "echo", [ toEchoArg skillsText ] )
+    , ( "echo", [ multiline skillsText ] )
     , ( "echo", [] )
-    , ( "echo", [ toEchoArg workExperiencesText ] )
+    , ( "echo", [ multiline workExperiencesText ] )
     , ( "echo", [] )
-    , ( "echo", [ toEchoArg languagesText ] )
+    , ( "echo", [ multiline languagesText ] )
     ]
         |> List.map (evalCommand environment)
         |> Screen.batch
@@ -193,32 +189,104 @@ bio ((Environment { screenWidth }) as environment) _ =
 projects : Command
 projects environment _ =
     let
-        pjs =
-            [ { label = "tx-village"
-              , description = "Cardano transaction framework"
+        openSourceProjectsTitle =
+            white
+                ++ """
+                   Open-Source
+                   -----------
+                   """
+                ++ noColor
+
+        openSourceProjects =
+            [ { label = "LambdaBuffers (Haskell / Rust / Nix)"
+              , description = "Schema language and code generator for polyglot projects"
+              , source = Just "https://github.com/mlabs-haskell/lambda-buffers"
+              , example = Nothing
+              }
+            , { label = "Plutus Ledger API Rust"
+              , description = "Plutus types and useful tools for Cardano dApp development"
+              , source = Just "https://github.com/mlabs-haskell/plutus-ledger-api-rust"
+              , example = Nothing
+              }
+            , { label = "Tx Village (Rust)"
+              , description = "Rust based toolkit for Cardano transaction building, verification and chain-indexing"
               , source = Just "https://github.com/mlabs-haskell/tx-village"
               , example = Nothing
               }
-            , { label = "Szabo Gergely portfolio"
-              , description = "This web page."
-              , source = Just "https://github.com/gege251/szabo-gergely-portfolio"
+            , { label = "Bot Plutus Interface (Haskell)"
+              , description = "Transaction builder framework based on plutus-apps Contract monad interface"
+              , source = Just "https://github.com/mlabs-haskell/bot-plutus-interface"
+              , example = Nothing
+              }
+            , { label = "Plutip (Haskell)"
+              , description = "Cardano local test network executer and test framework"
+              , source = Just "https://github.com/mlabs-haskell/plutip"
+              , example = Nothing
+              }
+            , { label = "Cardano Devnet flake (Nix)"
+              , description = "Cardano local test network executer based on process-compose"
+              , source = Just "https://github.com/mlabs-haskell/cardano-devnet-flake"
+              , example = Nothing
+              }
+            , { label = "Flake-lang.nix (Nix)"
+              , description = "Nix tools powering polyglot mono-repositories"
+              , source = Just "https://github.com/mlabs-haskell/flake-lang.nix"
+              , example = Nothing
+              }
+            ]
+
+        petProjectsTitle =
+            white
+                ++ """
+                   Pet projects
+                   ------------
+                   """
+                ++ noColor
+
+        petProjects =
+            [ { label = "Szabo Gergely portfolio (Elm)"
+              , description = "This web page, simulating a terminal with a few commands like `echo` and `figlet`."
+              , source = Just "https://github.com/szg251/szabo-gergely-portfolio"
               , example = Just "https://szabogergely.com"
+              }
+            , { label = "Activity Analyser (Rust)"
+              , description = "FIT file analyser for cycling activities"
+              , source = Just "https://github.com/szg251/activity-analyser"
+              , example = Nothing
+              }
+            , { label = "Chess Clock (embedded Rust)"
+              , description = "Chess clock implemented for an STM32 microcontroller"
+              , source = Just "https://github.com/szg251/chesschock"
+              , example = Nothing
               }
             ]
     in
     [ ( "figlet", [ "-f", "small", "Projects" ] )
     , ( "link", [ "-u", "mainmenu", "<- back to main menu" ] )
+    , ( "echo", [ multiline openSourceProjectsTitle ] )
     ]
         ++ List.concatMap
             (\{ label, description, source, example } ->
                 MaybeE.values
                     [ Just ( "echo", [ white, label, noColor, "\\n" ] )
                     , Just ( "echo", [ description, "\\n" ] )
-                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, "Source" ] )) source
-                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, "Link" ] )) example
+                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, src ] )) source
+                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, "See project" ] )) example
                     ]
             )
-            pjs
+            openSourceProjects
+        ++ [ ( "echo", [ multiline petProjectsTitle ] )
+           ]
+        ++ List.concatMap
+            (\{ label, description, source, example } ->
+                MaybeE.values
+                    [ Just ( "echo", [ white, label, noColor, "\\n" ] )
+                    , Just ( "echo", [ description, "\\n" ] )
+                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, src ] )) source
+                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, "See project" ] )) example
+                    ]
+            )
+            petProjects
         |> List.map (evalCommand environment)
         |> Screen.batch
 
@@ -226,6 +294,12 @@ projects environment _ =
 music : Command
 music environment _ =
     let
+        discographyTitle =
+            white ++ """
+                     Discography
+                     -----------
+                     """
+
         discography =
             [ ( green ++ "Whirl" ++ noColor ++ " Antal Gábor Trio (2013/3)"
               , "https://open.spotify.com/album/5Ndwpp6V6j5ItlQ8NuN0Mc?si=K8gGnZKPRt-gaphQF0PPWw"
@@ -240,11 +314,7 @@ music environment _ =
 
         discographyCommands =
             ( "echo"
-            , [ toEchoArg
-                    (white ++ """
-                              Discography
-                              -----------
-                              """)
+            , [ multiline discographyTitle
               ]
             )
                 :: List.concatMap
@@ -254,6 +324,12 @@ music environment _ =
                         ]
                     )
                     discography
+
+        videosTitle =
+            white ++ """
+                     Videos
+                     ------
+                     """
 
         videos =
             [ ( "Antal Gábor Trio - Whirl (Medley)", "https://youtu.be/kDLOY8DkD-E" )
@@ -271,11 +347,7 @@ music environment _ =
 
         videosCommands =
             ( "echo"
-            , [ toEchoArg
-                    (white ++ """
-                              Videos
-                              ------
-                              """)
+            , [ multiline videosTitle
               ]
             )
                 :: List.concatMap
@@ -304,8 +376,13 @@ evalCommand (Environment environment) ( commandName, args ) =
         |> Maybe.withDefault (Screen.printLn ("command not found: " ++ commandName))
 
 
-toEchoArg : String -> String
-toEchoArg =
+
+-- | Trim the white space from the prefix of multiline strings. If the whitespace is intentional,
+-- $ sign can be used as a stopper, this will be replaced
+
+
+multiline : String -> String
+multiline =
     String.split "\n"
         >> List.map (String.trim >> String.replace "$" " ")
         >> String.join "\\n"

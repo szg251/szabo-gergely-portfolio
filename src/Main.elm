@@ -65,7 +65,7 @@ init flags url key =
                     , ( "link", Command.link )
                     , ( "home", Script.home )
                     , ( "mainmenu", Script.mainmenu )
-                    , ( "bio", Script.bio )
+                    , ( "skills", Script.skills )
                     , ( "projects", Script.projects )
                     , ( "music", Script.music )
                     ]

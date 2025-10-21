@@ -68,7 +68,7 @@ suite =
                     expectedOutput =
                         [ Line
                             [ NormalBlock [ '7', '6', '5', '4' ]
-                            , Link ( "https://example.com", [ '3', '2', '1', '0' ] , "")
+                            , Link ( "https://example.com", [ '3', '2', '1', '0' ], "" )
                             ]
                         ]
                 in
@@ -110,7 +110,7 @@ suite =
                     expectedOutput =
                         [ Line
                             [ NormalBlock [ '7', '6' ]
-                            , Link ( "https://example.com", [ '3', '2', '1', '0' ] , "")
+                            , Link ( "https://example.com", [ '3', '2', '1', '0' ], "" )
                             , NormalBlock [ '5', '4' ]
                             ]
                         ]
