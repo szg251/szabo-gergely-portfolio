@@ -7,6 +7,7 @@
 {
   packages = [
     pkgs.elmPackages.elm-live
+    pkgs.elmPackages.elm-review
     pkgs.haskellPackages.mustache
     pkgs.nodePackages.uglify-js
     pkgs.nodePackages.vercel
