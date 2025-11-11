@@ -81,10 +81,10 @@ skills ((Environment { screenWidth }) as environment) _ =
               , "Designed and implemented several Cardano dApps, including sidechains, voting protoocols, etc."
               )
             , ( green ++ "Frontend developer experience" ++ noColor
-              , "Worked as a full stack engineer maintaining large scale frontend and backend applications, using React (TypesScript) and Elm."
+              , "Worked as a full stack engineer maintaining large scale frontend and backend applications, using React (TypeScript) and Elm."
               )
             , ( green ++ "DevOps" ++ noColor
-              , "Configureed and maintained projects using Nix (Hercules CI), AWS (ECS, Aurora, Lambda, S3), GCP"
+              , "Configured and maintained projects using Nix (Hercules CI), bare metal Linux, AWS (ECS, Aurora, Lambda, S3), GCP"
               )
             ]
 
