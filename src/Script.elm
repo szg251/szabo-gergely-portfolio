@@ -210,7 +210,7 @@ projects environment _ =
               }
             , { label = "Tx Village (Rust)"
               , description = "Rust based toolkit for Cardano transaction building, verification and chain-indexing"
-              , source = Just "https://github.com/mlabs-haskell/tx-village"
+              , source = Just "https://github.com/szg251/tx-village"
               , example = Nothing
               }
             , { label = "Bot Plutus Interface (Haskell)"
