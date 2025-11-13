@@ -233,6 +233,11 @@ projects environment _ =
               , source = Just "https://github.com/mlabs-haskell/flake-lang.nix"
               , example = Nothing
               }
+            , { label = "Agora DRep effect (Haskell / Plutarch)"
+              , description = "Extension of the Agora project allowing DAOs to cast votes for Cardano Governance Actions"
+              , source = Just "https://github.com/mlabs-haskell/agora-drep"
+              , example = Nothing
+              }
             ]
 
         petProjectsTitle =
