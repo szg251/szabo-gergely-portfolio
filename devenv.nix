@@ -5,11 +5,12 @@
 }:
 
 {
-  packages = [
-    pkgs.elmPackages.elm-live
-    pkgs.elmPackages.elm-review
-    pkgs.haskellPackages.mustache
-    pkgs.uglify-js
+  packages = with pkgs; [
+    elmPackages.elm-live
+    elmPackages.elm-review
+    haskellPackages.mustache
+    uglify-js
+    ansible
   ];
 
   languages.elm.enable = true;
@@ -35,18 +36,10 @@
       };
 
       "deploy:prod" = {
+        cwd = "./infra";
         exec = ''
-          test -d dist/prod
-          cp -r .vercel dist/prod/
-          vercel deploy dist/prod --local-config vercel.json --prod -y
-        '';
-      };
-
-      "deploy:staging" = {
-        exec = ''
-          test -d dist/staging
-          cp -r .vercel dist/staging/
-          vercel deploy dist/staging --local-config vercel.json -y
+          test -d ../dist/prod
+          ansible-playbook deploy.yml -i inventory.ini
         '';
       };
 

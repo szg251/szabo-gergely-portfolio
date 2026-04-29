@@ -1,0 +1,11 @@
+server {
+    listen 80;
+    server_name szabogergely.com www.szabogergely.com;
+
+    root /var/www/szabogergely;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
