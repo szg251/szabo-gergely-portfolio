@@ -9,8 +9,7 @@
     pkgs.elmPackages.elm-live
     pkgs.elmPackages.elm-review
     pkgs.haskellPackages.mustache
-    pkgs.nodePackages.uglify-js
-    pkgs.nodePackages.vercel
+    pkgs.uglify-js
   ];
 
   languages.elm.enable = true;
@@ -53,7 +52,7 @@
 
     }
     // pkgs.lib.mergeAttrsList (
-      builtins.map (env: {
+      map (env: {
 
         # Prepare index.html
         "${env}:prepare-index" = {
