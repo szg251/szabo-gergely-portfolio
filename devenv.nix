@@ -11,6 +11,7 @@
     haskellPackages.mustache
     uglify-js
     ansible
+    typst
   ];
 
   languages.elm.enable = true;
@@ -29,12 +30,6 @@
       ];
     in
     {
-      "packages:elm2nix" = {
-        exec = "elm2nix convert > elm-srcs.nix && elm2nix snapshot";
-        execIfModified = [ "elm.json" ];
-        before = [ "devenv:enterShell" ];
-      };
-
       "deploy:prod" = {
         cwd = "./infra";
         exec = ''

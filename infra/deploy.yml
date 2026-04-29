@@ -3,7 +3,6 @@
   become: true
 
   tasks:
-
     - name: Install Nginx
       apt:
         name: nginx
