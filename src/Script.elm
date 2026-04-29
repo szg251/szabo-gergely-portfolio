@@ -337,7 +337,8 @@ music environment _ =
                      """
 
         videos =
-            [ ( "Antal Gábor Trio - Whirl (Medley)", "https://youtu.be/kDLOY8DkD-E" )
+            [ ( "Szabó Gergely - Fekecs Ákos beszélgetések", "https://youtu.be/sYw8c84fZCo" )
+            , ( "Antal Gábor Trio - Whirl (Medley)", "https://youtu.be/kDLOY8DkD-E" )
             , ( "Tigranito (For Tigran Hamasyan)", "https://youtu.be/oy_qXHpdgrE" )
             , ( "Antal Gábor Trio - Journey", "https://youtu.be/jDP71XZxJQc" )
             , ( "Sári Parker and Friends", "https://youtu.be/Y0RYoEHEnVY" )
