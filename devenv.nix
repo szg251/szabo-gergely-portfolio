@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  config,
   ...
 }:
 
@@ -31,10 +32,18 @@
     in
     {
       "deploy:prod" = {
-        cwd = "./infra";
+        cwd = "${config.git.root}/infra";
         exec = ''
           test -d ../dist/prod
           ansible-playbook deploy.yml -i inventory.ini
+        '';
+      };
+
+      "resume:pdf" = {
+        cwd = "${config.git.root}/resume";
+        exec = ''
+          typst compile resume.typ resume.pdf \
+            --font-path ${config.git.root}/resume/fonts
         '';
       };
 
@@ -86,11 +95,21 @@
       }) envs
     );
 
-  processes.dev.exec = ''
-    elm-live src/Main.elm \
-    --dir dist/local \
-    --open \
-    --pushstate \
-    -- --output=dist/local/Main.min.js
-  '';
+  processes = {
+    dev.exec = ''
+      elm-live src/Main.elm \
+      --dir dist/local \
+      --open \
+      --pushstate \
+      -- --output=dist/local/Main.min.js
+    '';
+
+    resume-watch = {
+      cwd = "${config.git.root}/resume";
+      exec = ''
+        typst watch resume.typ \
+          --font-path ${config.git.root}/resume/fonts
+      '';
+    };
+  };
 }

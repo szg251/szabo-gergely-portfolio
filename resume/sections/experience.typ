@@ -1,0 +1,62 @@
+#import "@preview/modern-cv:0.10.0": *
+
+= Work Experience
+
+#resume-entry(
+  title: "Haskell/Cardano Blockchain Consultant",
+  location: "MLabs, Gyor, Hungary (remote)",
+  date: "Aug 2021 - present",
+  description: "Full time",
+)
+
+#resume-item[
+  - Led design and implementation of an off-chain tool in Haskell for building, batching and submitting transactions, handling millions of dollars worth of tokens safely.
+  - Developed a Rust-based off-chain toolkit including a transaction builder, chain-follower and indexer, improving development workflows and computational resource requirements. (Rust, PostgreSQL)
+  - Engineered Rust code generation for LambdaBuffers schema language compiler, facilitating type-safe integration in a polyglot environment.
+  - Worked as technical lead and project manager delivering Plutus smart contracts and CLI tools for IOG's partnerchain project, following agile methodologies with weekly sprint meetings and story points.
+  - Designed and implemented several Cardano dApps (Plutus, Plutarch, Servant, REST, gRPC)
+  - Co-designed and implemented an extension to the Agora on-chain voting platform, integrating with L1 dRep voting.
+  - Audited dApps finding security vulnerabilities and suggesting solutions.
+  - Implemented and scaled OpenFGA-based authorization across backend workflows.
+  - Refactored Haskell backend modules toward ports-and-adapters architecture.
+]
+
+#resume-entry(
+  title: "Full Stack Web Engineer",
+  location: "Kakekomu Inc., Tokyo, Japan (remote)",
+  date: "Jan 2018 - Jul 2021",
+  description: "Part time until Mar 2019, then full time",
+)
+
+#resume-item[
+  - Designed and implemented a Q&A service backend/frontend using TypeScript, Koa.js, MySQL and Next.js, deployed to AWS ECS.
+  - Configured CI/CD flows for several services.
+  - Implemented the front end of a lawyer search platform in Next.js.
+  - Created an internal admin tool using Elm and Ruby on Rails.
+  - Built an internal UI library using React, published to a private GitHub npm registry.
+  - Worked in a remote team using agile methodologies.
+]
+
+#resume-entry(
+  title: "Frontend Web Engineer",
+  location: "Yahoo Japan, Tokyo, Japan",
+  date: "Jan 2018 - Mar 2019",
+  description: "Full time",
+)
+
+#resume-item[
+  - Implemented new features on an advertisement management tool using React.
+  - Configured CI flow for the advertisement management tool using Screwdriver.
+  - Worked in both waterfall and agile workflows during the company's agile transition.
+]
+
+#resume-entry(
+  title: "Junior Software Engineer",
+  location: "Happiness Technology, Tokyo, Japan",
+  date: "Apr 2017 - Dec 2017",
+  description: "Full time",
+)
+
+#resume-item[
+  - Implemented new features on an inventory management system (Java, Oracle PL/SQL, Flash, JavaScript).
+]
