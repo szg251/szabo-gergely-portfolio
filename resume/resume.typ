@@ -10,8 +10,7 @@
     linkedin: "szg251",
     address: "Gyor, Hungary",
     positions: (
-      "Web Backend Developer",
-      "Blockchain Developer",
+      "Backend & Systems Engineer",
     ),
     website: "https://www.szabogergely.com"
   ),
