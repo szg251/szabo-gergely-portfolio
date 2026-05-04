@@ -55,6 +55,8 @@ home ((Environment { screenWidth }) as environment) _ =
            , ( "link", [ "https://github.com/szg251" ] )
            , ( "echo", [ white ++ "LinkedIn: " ] )
            , ( "link", [ "https://www.linkedin.com/in/szg251" ] )
+           , ( "echo", [] )
+           , ( "link", [ "-u", "https://raw.githubusercontent.com/szg251/szabo-gergely-portfolio/refs/heads/main/resume/resume.pdf", "Please download my CV here." ] )
            ]
         |> List.map (evalCommand environment)
         |> Screen.batch
@@ -156,6 +158,7 @@ skills ((Environment { screenWidth }) as environment) _ =
     , ( "echo", [ multiline workExperiencesText ] )
     , ( "echo", [] )
     , ( "echo", [ multiline languagesText ] )
+    , ( "echo", [] )
     ]
         |> List.map (evalCommand environment)
         |> Screen.batch
