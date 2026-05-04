@@ -2,6 +2,7 @@ module Script exposing (..)
 
 import Command exposing (Command, Environment(..))
 import Dict
+import Generated
 import Maybe.Extra as MaybeE
 import Screen exposing (ScreenCommand)
 
@@ -67,32 +68,11 @@ mainmenu environment _ =
 skills : Command
 skills ((Environment { screenWidth }) as environment) _ =
     let
-        mySkills =
-            [ ( green ++ "Programming language skills: Rust/Haskell/TypeScript" ++ noColor
-              , "I have several years of experience using Rust, Haskell, PureScript and TypeScript, but also worked on projects with Elm, Ruby and Python."
-              )
-            , ( green ++ "Backend developer experience" ++ noColor
-              , "Designed and built REST and gRPC backend services with the following libraries (non-exclusive list): Rocket, Axum, Tonic, Servant, IHP, Koa.js, Ruby on Rails."
-              )
-            , ( green ++ "Databases" ++ noColor
-              , "Mostly but not exclusively used relational databases like PostgreSQL for backend applications and blockchain indexers handling large amount of data."
-              )
-            , ( green ++ "Blockchain dApp development" ++ noColor
-              , "Designed and implemented several Cardano dApps, including sidechains, voting protoocols, etc."
-              )
-            , ( green ++ "Frontend developer experience" ++ noColor
-              , "Worked as a full stack engineer maintaining large scale frontend and backend applications, using React (TypeScript) and Elm."
-              )
-            , ( green ++ "DevOps" ++ noColor
-              , "Configured and maintained projects using Nix (Hercules CI), bare metal Linux, AWS (ECS, Aurora, Lambda, S3), GCP"
-              )
-            ]
-
         skillsText =
-            mySkills
+            Generated.skills
                 |> List.map
-                    (\( name, description ) ->
-                        name ++ "\n" ++ description
+                    (\{ title, description } ->
+                        green ++ title ++ noColor ++ "\n" ++ description
                     )
                 |> String.join "\n\n"
 
@@ -104,44 +84,39 @@ skills ((Environment { screenWidth }) as environment) _ =
                    """
                 ++ noColor
 
-        workExperiences =
-            [ ( "2021.08. - present "
-              , green ++ "MLabs" ++ noColor
-              , "Haskell and Plutus consultant"
-              )
-            , ( "2019.04. - 2021.07 "
-              , green ++ "Kakekomu (Tokyo, Japan)" ++ noColor
-              , "Full-Stack Engineer full time (React, Elm, TypeScript, Koa.js, Ruby on Rails, AWS)"
-              )
-            , ( "2018.05. - 2019.03."
-              , green ++ "Kakekomu (Tokyo, Japan)" ++ noColor
-              , "Front-End Engineer part time (React, Next.js)"
-              )
-            , ( "2018.01. - 2019.03."
-              , green ++ "Yahoo Japan (Tokyo, Japan)" ++ noColor
-              , "Front-End engineer (React, TypeScript)"
-              )
-            , ( "2017.04. - 2017.12."
-              , green ++ "Happiness Technology (Tokyo, Japan)" ++ noColor
-              , "System Engineer (Java, Oracle SQL)"
-              )
-            ]
-
         workExperiencesText =
             workExperiencesTitle
                 ++ (if screenWidth > 80 then
-                        workExperiences
+                        Generated.workExperiences
                             |> List.map
-                                (\( year, title, content ) ->
-                                    year ++ "  " ++ title ++ "\n$                    " ++ content
+                                (\{ date, description, location, title } ->
+                                    date
+                                        ++ "  "
+                                        ++ green
+                                        ++ description
+                                        ++ "("
+                                        ++ location
+                                        ++ ")"
+                                        ++ noColor
+                                        ++ "\n$                    "
+                                        ++ title
                                 )
                             |> String.join "\n\n"
 
                     else
-                        workExperiences
+                        Generated.workExperiences
                             |> List.map
-                                (\( year, title, content ) ->
-                                    year ++ "\n\n" ++ title ++ "\n" ++ content
+                                (\{ date, description, location, title } ->
+                                    date
+                                        ++ "\n\n"
+                                        ++ green
+                                        ++ description
+                                        ++ "("
+                                        ++ location
+                                        ++ ")"
+                                        ++ noColor
+                                        ++ "\n"
+                                        ++ title
                                 )
                             |> String.join "\n\n"
                    )
@@ -189,14 +164,6 @@ skills ((Environment { screenWidth }) as environment) _ =
 projects : Command
 projects environment _ =
     let
-        openSourceProjectsTitle =
-            white
-                ++ """
-                   Open-Source
-                   -----------
-                   """
-                ++ noColor
-
         openSourceProjects =
             [ { label = "LambdaBuffers (Haskell / Rust / Nix)"
               , description = "Schema language and code generator for polyglot projects"
@@ -268,30 +235,15 @@ projects environment _ =
     in
     [ ( "figlet", [ "-f", "small", "Projects" ] )
     , ( "link", [ "-u", "mainmenu", "<- back to main menu" ] )
-    , ( "echo", [ multiline openSourceProjectsTitle ] )
     ]
         ++ List.concatMap
-            (\{ label, description, source, example } ->
-                MaybeE.values
-                    [ Just ( "echo", [ white, label, noColor, "\\n" ] )
-                    , Just ( "echo", [ description, "\\n" ] )
-                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, src ] )) source
-                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, "See project" ] )) example
-                    ]
+            (\{ title, stack, description, url } ->
+                [ ( "echo", [ white, title, "(", stack, ")", noColor, "\\n" ] )
+                , ( "echo", [ description, "\\n" ] )
+                , ( "link", [ "-t", "_blank", "-u", url, url ] )
+                ]
             )
-            openSourceProjects
-        ++ [ ( "echo", [ multiline petProjectsTitle ] )
-           ]
-        ++ List.concatMap
-            (\{ label, description, source, example } ->
-                MaybeE.values
-                    [ Just ( "echo", [ white, label, noColor, "\\n" ] )
-                    , Just ( "echo", [ description, "\\n" ] )
-                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, src ] )) source
-                    , Maybe.map (\src -> ( "link", [ "-t", "_blank", "-u", src, "See project" ] )) example
-                    ]
-            )
-            petProjects
+            Generated.projects
         |> List.map (evalCommand environment)
         |> Screen.batch
 

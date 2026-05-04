@@ -13,9 +13,13 @@
     uglify-js
     ansible
     typst
+    watchexec
   ];
 
-  languages.elm.enable = true;
+  languages = {
+    elm.enable = true;
+    rust.enable = true;
+  };
 
   git-hooks.hooks = {
     typos.enable = true;
@@ -45,6 +49,18 @@
           typst compile resume.typ resume.pdf \
             --font-path ${config.git.root}/resume/fonts
         '';
+      };
+
+      "resume:codegen" = {
+        cwd = "${config.git.root}/codegen";
+        exec = ''
+          cargo run
+        '';
+        before = [
+          "local:make-elm"
+          "staging:make-elm"
+          "prod:make-elm"
+        ];
       };
 
     }
@@ -103,6 +119,13 @@
       --pushstate \
       -- --output=dist/local/Main.min.js
     '';
+
+    codegen-watch = {
+      cwd = "${config.git.root}/codegen";
+      exec = ''
+        watchexec -e rs cargo run
+      '';
+    };
 
     resume-watch = {
       cwd = "${config.git.root}/resume";
