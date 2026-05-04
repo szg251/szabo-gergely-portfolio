@@ -123,7 +123,7 @@ skills ((Environment { screenWidth }) as environment) _ =
               )
             , ( "2017.04. - 2017.12."
               , green ++ "Happiness Technology (Tokyo, Japan)" ++ noColor
-              , "System Engineer (Java, Oracle SQL"
+              , "System Engineer (Java, Oracle SQL)"
               )
             ]
 
