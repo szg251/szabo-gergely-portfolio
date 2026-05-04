@@ -1,0 +1,27 @@
+- title: Programming languages
+  description: I have several years of experience using Rust, Haskell, PureScript and TypeScript,
+    but also worked on projects with Elm, Ruby and Python.
+ 
+- title: Backend development
+  description: Designed and built REST and gRPC backend services with the following libraries
+    (e.g. Rocket, Axum, Tonic, Servant, IHP, Koa.js, Ruby on Rails.)
+ 
+- title: Databases 
+  description: Mostly but not exclusively used relational databases like PostgreSQL for backend
+    applications and blockchain indexers.
+ 
+- title: Blockchain dApp development 
+  description: Designed and implemented several Cardano dApps, including sidechains, voting
+    protoocols, etc.
+ 
+- title: Frontend development
+  description: Worked as a full stack engineer maintaining large scale frontend and backend
+    applications, using React (TypeScript) and Elm.
+ 
+- title: DevOps 
+  description: Configured and maintained projects using Nix (Hercules CI), bare metal Linux, AWS
+    (ECS, Aurora, Lambda, S3, etc.), GCP
+
+- title: Agentic Development
+  description: Used LLMs (e.g. Claude, Codex) to supplement my engineering workflows and to help my
+    research on new topics, or create quick prototypes or PoCs.

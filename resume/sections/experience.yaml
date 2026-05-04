@@ -1,7 +1,7 @@
 - title: Haskell/Cardano Blockchain Consultant
-  location: MLabs, Gyor, Hungary (remote)
+  location: remote
+  description: MLabs
   date: Aug 2021 - present
-  description: Full time
   items:
   - Led design and implementation of an off-chain tool in Haskell for building, batching and
     submitting transactions, handling millions of dollars worth of tokens safely.
@@ -21,9 +21,9 @@
   - Refactored Haskell backend modules toward ports-and-adapters architecture.
 
 - title: Full Stack Web Engineer
-  location: Kakekomu Inc., Tokyo, Japan (remote)
+  location: remote
+  description: Kakekomu Inc.
   date: Jan 2018 - Jul 2021
-  description: Part time until Mar 2019, then full time
   items:
   - Designed and implemented a Q&A service backend/frontend using TypeScript, Koa.js, MySQL and
     Next.js, deployed to AWS ECS.
@@ -34,18 +34,18 @@
   - Worked in a remote team using agile methodologies.
 
 - title: Frontend Web Engineer
-  location: Yahoo Japan, Tokyo, Japan
+  location: Tokyo, Japan
+  description: Yahoo Japan
   date: Jan 2018 - Mar 2019
-  description: Full time
   items:
   - Implemented new features on an advertisement management tool using React.
   - Configured CI flow for the advertisement management tool using Screwdriver.
   - Worked in both waterfall and agile workflows during the company's agile transition.
 
 - title: Junior Software Engineer
-  location: Happiness Technology, Tokyo, Japan
+  location: Tokyo, Japan
+  description: Happiness Technology
   date: Apr 2017 - Dec 2017
-  description: Full time
   items:
   - Implemented new features on an inventory management system (Java, Oracle PL/SQL, Flash,
     JavaScript).

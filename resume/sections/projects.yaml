@@ -1,0 +1,51 @@
+
+- title: LambdaBuffers
+  stack: Haskell / Rust / Nix
+  description: Schema language and code generator for polyglot projects
+  url: https://github.com/mlabs-haskell/lambda-buffers
+
+- title: Plutus Ledger API
+  stack: Rust
+  description: Plutus types and useful tools for Cardano dApp development
+  url: https://github.com/mlabs-haskell/plutus-ledger-api-rust
+
+- title: Tx Village
+  stack: Rust
+  description: Rust based toolkit for Cardano transaction building, verification and chain-indexing
+  url: https://github.com/mlabs-haskell/tx-village
+
+- title: Bot Plutus Interface
+  stack: Haskell
+  description: Transaction builder framework based on plutus-apps Contract monad interface
+  url: https://github.com/mlabs-haskell/bot-plutus-interface
+
+- title: Plutip
+  stack: Haskell
+  description: Cardano local test network executer and test framework
+  url: https://github.com/mlabs-haskell/plutip
+
+- title: Cardano Devnet Flake
+  stack: Nix
+  description: Cardano local test network executer based on process-compose
+  url: https://github.com/mlabs-haskell/cardano-devnet-flake
+
+- title: Flake-lang
+  stack: Nix
+  description: Nix tools powering polyglot mono-repositories
+  url: https://github.com/mlabs-haskell/flake-lang.nix
+
+- title: Szabo Gergely portfolio
+  stack: Elm
+  description: Personal portfolio web page, simulating a terminal with a few commands like `echo`
+    and `figlet`.
+  url: https://github.com/szg251/szabo-gergely-portfolio
+
+- title: Activity Analyser
+  stack: Rust
+  description: FIT file analyser for cycling activities
+  url: https://github.com/szg251/activity-analyser
+
+- title: Chess Clock
+  stack: Rust (embedded)
+  description: Chess clock implemented for an STM32 microcontroller
+  url: https://github.com/szg251/chesschock
