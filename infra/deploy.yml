@@ -2,10 +2,17 @@
   hosts: webservers
   become: true
 
+  vars:
+    domain_name: "szabogergely.com"
+    email: "contact@szabogergely.com"
+
   tasks:
-    - name: Install Nginx
+    - name: Install Ngnix, Certbot and Cloudflare plugin
       apt:
-        name: nginx
+        name:
+          - nginx
+          - certbot
+          - python3-certbot-dns-cloudflare
         state: present
         update_cache: yes
 
@@ -41,6 +48,32 @@
         path: /etc/nginx/sites-enabled/default
         state: absent
       notify: Reload Nginx
+
+    - name: Create Cloudflare credentials file
+      copy:
+        dest: /etc/letsencrypt/cloudflare.ini
+        mode: '0600'
+        content: |
+          dns_cloudflare_api_token = {{ cloudflare_api_token }}
+
+    - name: Obtain certificate via DNS challenge
+      command: >
+        certbot certonly
+        --dns-cloudflare
+        --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini
+        --non-interactive
+        --agree-tos
+        --email {{ email }}
+        -d {{ domain_name }}
+        -d *.{{ domain_name }}
+      args:
+        creates: /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem
+
+    - name: Ensure certbot renewal timer is enabled
+      systemd:
+        name: certbot.timer
+        enabled: yes
+        state: started
 
   handlers:
     - name: Reload Nginx
